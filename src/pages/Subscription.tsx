@@ -207,7 +207,7 @@ const Subscription = () => {
                 <p className="text-2xl font-bold text-primary">{studentPrice.toLocaleString()} {settings.currency}</p>
                 {zoneName && <p className="text-xs text-muted-foreground mt-1">{zoneName} — {studentGovernorate}</p>}
                 {settings.description && <p className="text-sm text-muted-foreground mt-1">{settings.description}</p>}
-                <p className="text-xs text-muted-foreground mt-1">{settings.duration_months} شهر</p>
+                
               </CardContent>
             </Card>
 
