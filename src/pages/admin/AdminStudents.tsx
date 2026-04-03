@@ -63,10 +63,20 @@ const AdminStudents = () => {
   const getMajorName = (id: string | null) => id ? majors.find((m) => m.id === id)?.name_ar || "-" : "-";
   const getFullName = (s: Tables<"students">) => [s.first_name, s.second_name, s.third_name, s.fourth_name].filter(Boolean).join(" ");
 
+  const { loading: scopeLoading, getAllowedMajorIds } = useModeratorScope(
+    user?.id, isAdmin, universities, colleges, majors
+  );
+
+  const scopedStudents = useMemo(() => {
+    const allowed = getAllowedMajorIds();
+    if (!allowed) return students; // null = no restriction
+    return students.filter((s) => s.major_id && allowed.has(s.major_id));
+  }, [students, getAllowedMajorIds, isAdmin]);
+
   const filteredColleges = universityId ? colleges.filter((c) => c.university_id === universityId) : colleges;
   const filteredMajors = collegeId ? majors.filter((m) => m.college_id === collegeId) : majors;
 
-  const filtered = students.filter((s) => {
+  const filtered = scopedStudents.filter((s) => {
     if (!search) return true;
     const name = getFullName(s).toLowerCase();
     return name.includes(search.toLowerCase()) || s.coordination_number?.includes(search);
