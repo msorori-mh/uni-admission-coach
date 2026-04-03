@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
-import {
   Loader2, CreditCard, Upload, CheckCircle, Clock, XCircle,
   Building, ArrowLeftRight, ChevronRight, GraduationCap
 } from "lucide-react";
