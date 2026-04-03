@@ -69,7 +69,7 @@ const AdminSubscriptionPlans = () => {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Settings className="w-6 h-6" /> إعدادات الاشتراك</h1>
-          <p className="text-sm text-muted-foreground">تحديد سعر ومدة الاشتراك للطلاب</p>
+          <p className="text-sm text-muted-foreground">تحديد سعر الاشتراك للطلاب</p>
         </div>
         <Card>
           <CardHeader><CardTitle className="text-base">بيانات الاشتراك</CardTitle></CardHeader>
