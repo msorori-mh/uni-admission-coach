@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Loader2, FileText, HelpCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, FileText, HelpCircle, Upload, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Lesson {
   id: string;
@@ -79,6 +80,12 @@ const AdminContent = () => {
 
   // Selected lesson for questions
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
+
+  // Import state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMajorId, setImportMajorId] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     const [{ data: u }, { data: c }, { data: m }, { data: l }, { data: q }] = await Promise.all([
@@ -242,6 +249,122 @@ const AdminContent = () => {
     else { toast({ title: "تم الحذف" }); fetchData(); }
   };
 
+  // --- Import ---
+  const downloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const lessonsData = [
+      ["عنوان الدرس", "المحتوى", "الملخص", "ترتيب العرض", "منشور (نعم/لا)"],
+      ["مثال: مقدمة في البرمجة", "محتوى الدرس هنا...", "ملخص قصير", 1, "نعم"],
+    ];
+    const questionsData = [
+      ["عنوان الدرس", "نص السؤال", "الخيار أ", "الخيار ب", "الخيار ج", "الخيار د", "الإجابة الصحيحة (a/b/c/d)", "الشرح"],
+      ["مقدمة في البرمجة", "ما هي لغة البرمجة؟", "أداة تصميم", "لغة حاسوب", "جهاز", "شبكة", "b", "لغة البرمجة هي لغة يفهمها الحاسوب"],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lessonsData), "الدروس");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(questionsData), "الأسئلة");
+    XLSX.writeFile(wb, "قالب_استيراد_المحتوى.xlsx");
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !importMajorId) return;
+    setImporting(true);
+
+    try {
+      const data = await file.arrayBuffer();
+      let lessonsSheet: any[][] = [];
+      let questionsSheet: any[][] = [];
+
+      if (file.name.endsWith(".csv")) {
+        const text = new TextDecoder("utf-8").decode(data);
+        const wb = XLSX.read(text, { type: "string" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+        // Detect if CSV is lessons or questions by column count
+        if (rows[0] && (rows[0] as any[]).length >= 7) {
+          questionsSheet = rows;
+        } else {
+          lessonsSheet = rows;
+        }
+      } else {
+        const wb = XLSX.read(data, { type: "array" });
+        wb.SheetNames.forEach((name) => {
+          const sheet = wb.Sheets[name];
+          const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+          if (name.includes("سئلة") || name.includes("question")) {
+            questionsSheet = rows;
+          } else {
+            lessonsSheet = rows;
+          }
+        });
+      }
+
+      // Import lessons (skip header row)
+      const lessonMap = new Map<string, string>(); // title -> id
+      if (lessonsSheet.length > 1) {
+        for (let i = 1; i < lessonsSheet.length; i++) {
+          const row = lessonsSheet[i] as any[];
+          if (!row[0]) continue;
+          const title = String(row[0]).trim();
+          const { data: inserted, error } = await supabase.from("lessons").insert({
+            major_id: importMajorId,
+            title,
+            content: row[1] ? String(row[1]) : "",
+            summary: row[2] ? String(row[2]) : "",
+            display_order: row[3] ? Number(row[3]) : i,
+            is_published: row[4] ? String(row[4]).includes("نعم") || String(row[4]).toLowerCase() === "true" : false,
+          }).select("id").single();
+          if (error) {
+            toast({ variant: "destructive", title: `خطأ في درس "${title}": ${error.message}` });
+          } else if (inserted) {
+            lessonMap.set(title, inserted.id);
+          }
+        }
+      }
+
+      // Import questions (skip header row)
+      if (questionsSheet.length > 1) {
+        // If no lessons were imported, map existing lessons
+        if (lessonMap.size === 0) {
+          lessons.filter(l => l.major_id === importMajorId).forEach(l => lessonMap.set(l.title, l.id));
+        }
+
+        for (let i = 1; i < questionsSheet.length; i++) {
+          const row = questionsSheet[i] as any[];
+          if (!row[0] || !row[1]) continue;
+          const lessonTitle = String(row[0]).trim();
+          const lessonId = lessonMap.get(lessonTitle);
+          if (!lessonId) {
+            toast({ variant: "destructive", title: `لم يتم العثور على درس "${lessonTitle}" - تخطي السؤال ${i}` });
+            continue;
+          }
+          const { error } = await supabase.from("questions").insert({
+            lesson_id: lessonId,
+            question_text: String(row[1]),
+            option_a: String(row[2] || ""),
+            option_b: String(row[3] || ""),
+            option_c: String(row[4] || ""),
+            option_d: String(row[5] || ""),
+            correct_option: String(row[6] || "a").toLowerCase().trim(),
+            explanation: row[7] ? String(row[7]) : "",
+            display_order: i,
+          });
+          if (error) {
+            toast({ variant: "destructive", title: `خطأ في سؤال ${i}: ${error.message}` });
+          }
+        }
+      }
+
+      toast({ title: "تم الاستيراد بنجاح" });
+      fetchData();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: `خطأ في قراءة الملف: ${err.message}` });
+    }
+    setImporting(false);
+    setImportDialogOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   if (authLoading || loading) return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
 
   const lessonQuestions = selectedLesson ? questions.filter((q) => q.lesson_id === selectedLesson) : [];
@@ -255,7 +378,12 @@ const AdminContent = () => {
             <h1 className="text-2xl font-bold">المحتوى التعليمي</h1>
             <p className="text-sm text-muted-foreground">{filteredLessons.length} درس</p>
           </div>
-          <Button onClick={openCreateLesson} size="sm"><Plus className="w-4 h-4 ml-1" />إضافة درس</Button>
+          <div className="flex gap-2">
+            <Button onClick={() => { setImportMajorId(filterMajor); setImportDialogOpen(true); }} size="sm" variant="outline">
+              <Upload className="w-4 h-4 ml-1" />استيراد
+            </Button>
+            <Button onClick={openCreateLesson} size="sm"><Plus className="w-4 h-4 ml-1" />إضافة درس</Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -429,6 +557,55 @@ const AdminContent = () => {
               <Textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} rows={2} />
             </div>
             <Button onClick={handleSaveQuestion} disabled={saving} className="w-full">{saving ? "جاري الحفظ..." : "حفظ"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Upload className="w-5 h-5" />استيراد دروس وأسئلة</DialogTitle>
+            <DialogDescription>استورد الدروس والأسئلة من ملف Excel أو CSV</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>التخصص *</Label>
+              <select value={importMajorId} onChange={(e) => setImportMajorId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">اختر التخصص</option>
+                {majors.map((m: any) => <option key={m.id} value={m.id}>{m.name_ar}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>اختر ملف (Excel أو CSV)</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleImportFile}
+                disabled={!importMajorId || importing}
+              />
+            </div>
+
+            {importing && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />جاري الاستيراد...
+              </div>
+            )}
+
+            <div className="bg-muted rounded-lg p-3 space-y-2">
+              <p className="text-xs font-semibold">تنسيق الملف المطلوب:</p>
+              <p className="text-xs text-muted-foreground">
+                <strong>ورقة "الدروس":</strong> عنوان الدرس | المحتوى | الملخص | ترتيب العرض | منشور
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <strong>ورقة "الأسئلة":</strong> عنوان الدرس | نص السؤال | خيار أ | خيار ب | خيار ج | خيار د | الإجابة (a/b/c/d) | الشرح
+              </p>
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={downloadTemplate}>
+                <Download className="w-3 h-3 ml-1" />تحميل قالب فارغ
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
