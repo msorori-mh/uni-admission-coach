@@ -404,7 +404,7 @@ const AdminContent = () => {
         <div className="flex gap-2 flex-wrap">
           <select value={filterUni} onChange={(e) => { setFilterUni(e.target.value); setFilterCollege(""); setFilterMajor(""); }} className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm flex-1 min-w-[140px]">
             <option value="">جميع الجامعات</option>
-            {universities.map((u: any) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
+            {scopedUniversities.map((u: any) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
           </select>
           <select value={filterCollege} onChange={(e) => { setFilterCollege(e.target.value); setFilterMajor(""); }} className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm flex-1 min-w-[140px]">
             <option value="">جميع الكليات</option>
