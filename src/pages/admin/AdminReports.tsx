@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModeratorScope } from "@/hooks/useModeratorScope";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Loader2 } from "lucide-react";
 import {
@@ -24,7 +25,7 @@ const COLORS = [
 ];
 
 const AdminReports = () => {
-  const { loading: authLoading } = useAuth("moderator");
+  const { loading: authLoading, isAdmin, user } = useAuth("moderator");
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<Tables<"students">[]>([]);
   const [universities, setUniversities] = useState<Tables<"universities">[]>([]);
@@ -49,7 +50,17 @@ const AdminReports = () => {
     fetch();
   }, [authLoading]);
 
-  if (authLoading || loading) {
+  const { loading: scopeLoading, getAllowedMajorIds } = useModeratorScope(
+    user?.id, isAdmin, universities, colleges, majors
+  );
+
+  const scopedStudents = useMemo(() => {
+    const allowed = getAllowedMajorIds();
+    if (!allowed) return students;
+    return students.filter((s) => s.major_id && allowed.has(s.major_id));
+  }, [students, getAllowedMajorIds, isAdmin]);
+
+  if (authLoading || loading || scopeLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
@@ -64,14 +75,14 @@ const AdminReports = () => {
   // Students per university
   const uniCounts = universities.map((u) => ({
     name: u.name_ar.length > 20 ? u.name_ar.slice(0, 18) + "…" : u.name_ar,
-    count: students.filter((s) => s.university_id === u.id).length,
+    count: scopedStudents.filter((s) => s.university_id === u.id).length,
   })).filter((d) => d.count > 0);
 
   // Students per college (top 10)
   const collegeCounts = colleges
     .map((c) => ({
       name: c.name_ar.length > 20 ? c.name_ar.slice(0, 18) + "…" : c.name_ar,
-      count: students.filter((s) => s.college_id === c.id).length,
+      count: scopedStudents.filter((s) => s.college_id === c.id).length,
     }))
     .filter((d) => d.count > 0)
     .sort((a, b) => b.count - a.count)
@@ -79,7 +90,7 @@ const AdminReports = () => {
 
   // Students per governorate
   const govMap: Record<string, number> = {};
-  students.forEach((s) => {
+  scopedStudents.forEach((s) => {
     const gov = s.governorate || "غير محدد";
     govMap[gov] = (govMap[gov] || 0) + 1;
   });
@@ -97,22 +108,22 @@ const AdminReports = () => {
   ];
   const gpaData = gpaRanges.map((range) => ({
     name: range.label,
-    count: students.filter((s) => s.gpa !== null && s.gpa >= range.min && s.gpa <= range.max).length,
+    count: scopedStudents.filter((s) => s.gpa !== null && s.gpa >= range.min && s.gpa <= range.max).length,
   })).filter((d) => d.count > 0);
 
   // Students per major (top 10)
   const majorCounts = majors
     .map((m) => ({
       name: m.name_ar.length > 20 ? m.name_ar.slice(0, 18) + "…" : m.name_ar,
-      count: students.filter((s) => s.major_id === m.id).length,
+      count: scopedStudents.filter((s) => s.major_id === m.id).length,
     }))
     .filter((d) => d.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
   // Summary stats
-  const avgGpa = students.filter((s) => s.gpa).length > 0
-    ? (students.filter((s) => s.gpa).reduce((sum, s) => sum + (s.gpa || 0), 0) / students.filter((s) => s.gpa).length).toFixed(1)
+  const avgGpa = scopedStudents.filter((s) => s.gpa).length > 0
+    ? (scopedStudents.filter((s) => s.gpa).reduce((sum, s) => sum + (s.gpa || 0), 0) / scopedStudents.filter((s) => s.gpa).length).toFixed(1)
     : "—";
 
   const customTooltipStyle = {
@@ -129,7 +140,7 @@ const AdminReports = () => {
         <div>
           <h1 className="text-2xl font-bold text-foreground">التقارير والإحصائيات</h1>
           <p className="text-sm text-muted-foreground">
-            إجمالي الطلاب: {students.length} • متوسط المعدل: {avgGpa}%
+            إجمالي الطلاب: {scopedStudents.length} • متوسط المعدل: {avgGpa}%
           </p>
         </div>
 

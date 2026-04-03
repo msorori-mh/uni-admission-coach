@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModeratorScope } from "@/hooks/useModeratorScope";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, Pencil, Trash2, Eye } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 const AdminStudents = () => {
-  const { loading: authLoading, isAdmin } = useAuth("moderator");
+  const { loading: authLoading, isAdmin, user } = useAuth("moderator");
   const { toast } = useToast();
   const [students, setStudents] = useState<Tables<"students">[]>([]);
   const [universities, setUniversities] = useState<Tables<"universities">[]>([]);
@@ -62,10 +63,20 @@ const AdminStudents = () => {
   const getMajorName = (id: string | null) => id ? majors.find((m) => m.id === id)?.name_ar || "-" : "-";
   const getFullName = (s: Tables<"students">) => [s.first_name, s.second_name, s.third_name, s.fourth_name].filter(Boolean).join(" ");
 
+  const { loading: scopeLoading, getAllowedMajorIds } = useModeratorScope(
+    user?.id, isAdmin, universities, colleges, majors
+  );
+
+  const scopedStudents = useMemo(() => {
+    const allowed = getAllowedMajorIds();
+    if (!allowed) return students; // null = no restriction
+    return students.filter((s) => s.major_id && allowed.has(s.major_id));
+  }, [students, getAllowedMajorIds, isAdmin]);
+
   const filteredColleges = universityId ? colleges.filter((c) => c.university_id === universityId) : colleges;
   const filteredMajors = collegeId ? majors.filter((m) => m.college_id === collegeId) : majors;
 
-  const filtered = students.filter((s) => {
+  const filtered = scopedStudents.filter((s) => {
     if (!search) return true;
     const name = getFullName(s).toLowerCase();
     return name.includes(search.toLowerCase()) || s.coordination_number?.includes(search);
@@ -121,7 +132,7 @@ const AdminStudents = () => {
     else { toast({ title: "تم الحذف" }); fetchData(); }
   };
 
-  if (authLoading || loading) return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
+  if (authLoading || loading || scopeLoading) return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
 
   return (
     <AdminLayout>
