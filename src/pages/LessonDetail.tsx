@@ -101,13 +101,16 @@ const LessonDetail = () => {
     ? questions.filter((q) => answers[q.id] === q.correct_option).length
     : 0;
 
-  if (authLoading || loading) {
+  if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  // Content gating: staff can always access, students need active subscription
+  const canAccess = isStaff || hasActiveSubscription;
 
   if (!lesson) {
     return (
