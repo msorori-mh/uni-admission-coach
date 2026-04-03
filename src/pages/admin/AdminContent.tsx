@@ -40,7 +40,7 @@ interface Question {
 }
 
 const AdminContent = () => {
-  const { loading: authLoading, isAdmin } = useAuth("moderator");
+  const { user, loading: authLoading, isAdmin } = useAuth("moderator");
   const { toast } = useToast();
 
   const [majors, setMajors] = useState<any[]>([]);
