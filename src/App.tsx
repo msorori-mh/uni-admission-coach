@@ -14,6 +14,7 @@ import AdminUniversities from "./pages/admin/AdminUniversities";
 import AdminColleges from "./pages/admin/AdminColleges";
 import AdminMajors from "./pages/admin/AdminMajors";
 import AdminStudents from "./pages/admin/AdminStudents";
+import AdminReports from "./pages/admin/AdminReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
