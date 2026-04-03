@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   GraduationCap, LogOut, UserCircle, Bell, Shield, BookOpen,
   ClipboardCheck, Trophy, TrendingUp, Target, BarChart3
@@ -149,6 +150,7 @@ const Dashboard = () => {
             <span className="text-lg font-bold">مفاضلة</span>
           </div>
           <div className="flex items-center gap-1">
+            <ThemeToggle />
             {isStaff && (
               <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/20 hover:text-white">
                 <Link to="/admin"><Shield className="w-4 h-4 ml-1" />الإدارة</Link>
