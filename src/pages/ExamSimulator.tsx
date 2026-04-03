@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   GraduationCap, ChevronLeft, Clock, AlertTriangle, CheckCircle2,
   XCircle, Loader2, Play, Trophy, RotateCcw
