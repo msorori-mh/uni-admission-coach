@@ -333,9 +333,11 @@ const Register = () => {
                     <Select
                       value={universityId}
                       onValueChange={(v) => {
-                        setUniversityId(v);
-                        setCollegeId("");
-                        setMajorId("");
+                        setTimeout(() => {
+                          setUniversityId(v);
+                          setCollegeId("");
+                          setMajorId("");
+                        }, 0);
                       }}
                     >
                       <SelectTrigger><SelectValue placeholder="اختر الجامعة" /></SelectTrigger>
@@ -353,8 +355,10 @@ const Register = () => {
                       key={`college-${universityId}`}
                       value={collegeId}
                       onValueChange={(v) => {
-                        setCollegeId(v);
-                        setMajorId("");
+                        setTimeout(() => {
+                          setCollegeId(v);
+                          setMajorId("");
+                        }, 0);
                       }}
                       disabled={!universityId || colleges.length === 0}
                     >
