@@ -50,7 +50,6 @@ const AdminSubscriptionPlans = () => {
       price_zone_a: Number(priceZoneA),
       price_zone_b: Number(priceZoneB),
       currency,
-      duration_months: Number(durationMonths),
       description,
     };
 
