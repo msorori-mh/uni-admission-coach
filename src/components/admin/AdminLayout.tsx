@@ -6,6 +6,7 @@ import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users,
   LogOut, ChevronLeft, BarChart3, FileText
 } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
