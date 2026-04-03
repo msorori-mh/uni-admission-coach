@@ -31,7 +31,7 @@ const Dashboard = () => {
       ]);
       if (s) setStudent(s);
       if (roles) setIsStaff(roles.some((r) => r.role === "admin" || r.role === "moderator"));
-      setUnreadCount(notifs?.count || 0);
+      setUnreadCount((notifs as any)?.count ?? 0);
     });
 
     return () => subscription.unsubscribe();
