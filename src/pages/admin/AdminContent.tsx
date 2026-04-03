@@ -106,21 +106,34 @@ const AdminContent = () => {
 
   useEffect(() => { if (!authLoading) fetchData(); }, [authLoading]);
 
-  const filteredColleges = filterUni ? colleges.filter((c: any) => c.university_id === filterUni) : colleges;
-  const filteredMajors = filterCollege ? majors.filter((m: any) => m.college_id === filterCollege) : (filterUni ? majors.filter((m: any) => filteredColleges.some((c: any) => c.id === m.college_id)) : majors);
+  const { getAllowedMajorIds, loading: scopeLoading } = useModeratorScope(
+    user?.id, isAdmin, universities, colleges, majors
+  );
+
+  // Apply scope filtering
+  const allowedMajorIds = getAllowedMajorIds();
+  const scopedLessons = allowedMajorIds ? lessons.filter((l) => allowedMajorIds.has(l.major_id)) : lessons;
+  const scopedMajors = allowedMajorIds ? majors.filter((m: any) => allowedMajorIds.has(m.id)) : majors;
+  const scopedCollegeIds = new Set(scopedMajors.map((m: any) => m.college_id));
+  const scopedColleges = allowedMajorIds ? colleges.filter((c: any) => scopedCollegeIds.has(c.id)) : colleges;
+  const scopedUniIds = new Set(scopedColleges.map((c: any) => c.university_id));
+  const scopedUniversities = allowedMajorIds ? universities.filter((u: any) => scopedUniIds.has(u.id)) : universities;
+
+  const filteredColleges = filterUni ? scopedColleges.filter((c: any) => c.university_id === filterUni) : scopedColleges;
+  const filteredMajors = filterCollege ? scopedMajors.filter((m: any) => m.college_id === filterCollege) : (filterUni ? scopedMajors.filter((m: any) => filteredColleges.some((c: any) => c.id === m.college_id)) : scopedMajors);
   
   const filteredLessons = (() => {
-    if (filterMajor) return lessons.filter((l) => l.major_id === filterMajor);
+    if (filterMajor) return scopedLessons.filter((l) => l.major_id === filterMajor);
     if (filterCollege) {
-      const collegeMajorIds = majors.filter((m: any) => m.college_id === filterCollege).map((m: any) => m.id);
-      return lessons.filter((l) => collegeMajorIds.includes(l.major_id));
+      const collegeMajorIds = scopedMajors.filter((m: any) => m.college_id === filterCollege).map((m: any) => m.id);
+      return scopedLessons.filter((l) => collegeMajorIds.includes(l.major_id));
     }
     if (filterUni) {
-      const uniCollegeIds = colleges.filter((c: any) => c.university_id === filterUni).map((c: any) => c.id);
-      const uniMajorIds = majors.filter((m: any) => uniCollegeIds.includes(m.college_id)).map((m: any) => m.id);
-      return lessons.filter((l) => uniMajorIds.includes(l.major_id));
+      const uniCollegeIds = scopedColleges.filter((c: any) => c.university_id === filterUni).map((c: any) => c.id);
+      const uniMajorIds = scopedMajors.filter((m: any) => uniCollegeIds.includes(m.college_id)).map((m: any) => m.id);
+      return scopedLessons.filter((l) => uniMajorIds.includes(l.major_id));
     }
-    return lessons;
+    return scopedLessons;
   })();
 
   const getMajorName = (id: string) => majors.find((m: any) => m.id === id)?.name_ar || "";
