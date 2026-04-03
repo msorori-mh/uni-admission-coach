@@ -75,14 +75,14 @@ const AdminReports = () => {
   // Students per university
   const uniCounts = universities.map((u) => ({
     name: u.name_ar.length > 20 ? u.name_ar.slice(0, 18) + "…" : u.name_ar,
-    count: students.filter((s) => s.university_id === u.id).length,
+    count: scopedStudents.filter((s) => s.university_id === u.id).length,
   })).filter((d) => d.count > 0);
 
   // Students per college (top 10)
   const collegeCounts = colleges
     .map((c) => ({
       name: c.name_ar.length > 20 ? c.name_ar.slice(0, 18) + "…" : c.name_ar,
-      count: students.filter((s) => s.college_id === c.id).length,
+      count: scopedStudents.filter((s) => s.college_id === c.id).length,
     }))
     .filter((d) => d.count > 0)
     .sort((a, b) => b.count - a.count)
@@ -90,7 +90,7 @@ const AdminReports = () => {
 
   // Students per governorate
   const govMap: Record<string, number> = {};
-  students.forEach((s) => {
+  scopedStudents.forEach((s) => {
     const gov = s.governorate || "غير محدد";
     govMap[gov] = (govMap[gov] || 0) + 1;
   });
@@ -108,22 +108,22 @@ const AdminReports = () => {
   ];
   const gpaData = gpaRanges.map((range) => ({
     name: range.label,
-    count: students.filter((s) => s.gpa !== null && s.gpa >= range.min && s.gpa <= range.max).length,
+    count: scopedStudents.filter((s) => s.gpa !== null && s.gpa >= range.min && s.gpa <= range.max).length,
   })).filter((d) => d.count > 0);
 
   // Students per major (top 10)
   const majorCounts = majors
     .map((m) => ({
       name: m.name_ar.length > 20 ? m.name_ar.slice(0, 18) + "…" : m.name_ar,
-      count: students.filter((s) => s.major_id === m.id).length,
+      count: scopedStudents.filter((s) => s.major_id === m.id).length,
     }))
     .filter((d) => d.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
   // Summary stats
-  const avgGpa = students.filter((s) => s.gpa).length > 0
-    ? (students.filter((s) => s.gpa).reduce((sum, s) => sum + (s.gpa || 0), 0) / students.filter((s) => s.gpa).length).toFixed(1)
+  const avgGpa = scopedStudents.filter((s) => s.gpa).length > 0
+    ? (scopedStudents.filter((s) => s.gpa).reduce((sum, s) => sum + (s.gpa || 0), 0) / scopedStudents.filter((s) => s.gpa).length).toFixed(1)
     : "—";
 
   const customTooltipStyle = {
