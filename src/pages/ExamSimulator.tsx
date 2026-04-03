@@ -10,6 +10,7 @@ import {
   GraduationCap, ChevronLeft, Clock, AlertTriangle, CheckCircle2,
   XCircle, Loader2, Play, Trophy, RotateCcw
 } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const MAX_QUESTIONS = 45;
 const TOTAL_TIME = 90 * 60; // 90 min in seconds
