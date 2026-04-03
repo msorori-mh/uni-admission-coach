@@ -138,6 +138,21 @@ const LessonDetail = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {!canAccess ? (
+          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
+            <CardContent className="py-8 text-center">
+              <Lock className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-yellow-700 dark:text-yellow-400">محتوى مقفل</h2>
+              <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-2">
+                يجب تفعيل اشتراكك للوصول إلى هذا المحتوى التعليمي
+              </p>
+              <Button className="mt-4" onClick={() => navigate("/subscription")}>
+                تفعيل الاشتراك
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
         {/* Completion button */}
         <div className="mb-4 flex items-center justify-between">
           {isCompleted ? (
