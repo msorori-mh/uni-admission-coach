@@ -14,7 +14,7 @@ import { Loader2, Search, Pencil, Trash2, Eye } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 const AdminStudents = () => {
-  const { loading: authLoading, isAdmin } = useAuth("moderator");
+  const { loading: authLoading, isAdmin, user } = useAuth("moderator");
   const { toast } = useToast();
   const [students, setStudents] = useState<Tables<"students">[]>([]);
   const [universities, setUniversities] = useState<Tables<"universities">[]>([]);
