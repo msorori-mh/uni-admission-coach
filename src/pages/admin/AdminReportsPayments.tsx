@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ExportData } from "@/lib/exportReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -94,7 +95,7 @@ const AdminReportsPayments = () => {
     <AdminLayout>
       <div className="space-y-4">
         <div><h1 className="text-2xl font-bold text-foreground">تقارير الدفع والإيرادات</h1><p className="text-sm text-muted-foreground">{filtered.length} طلب دفع • {approved.length} مقبول</p></div>
-        <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate />
+        {(() => { const ed: ExportData = { title: "تقرير الدفع والإيرادات", summary: { "إجمالي الإيرادات": `${totalRevenue.toLocaleString()} ريال`, "المقبولة": approved.length, "المعلقة": pending, "المرفوضة": rejected }, headers: ["المبلغ", "العملة", "الحالة", "التاريخ"], rows: filtered.map((p) => [p.amount, p.currency, p.status === "approved" ? "مقبول" : p.status === "pending" ? "معلق" : "مرفوض", new Date(p.created_at).toLocaleDateString("ar")]) }; return <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate exportData={ed} exportFilename="تقرير_الدفع" />; })()}
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={DollarSign} label="إجمالي الإيرادات" value={totalRevenue.toLocaleString()} sub="ريال يمني" color="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400" />
           <StatCard icon={CreditCard} label="إجمالي الطلبات" value={filtered.length} sub={`${pending} معلق`} color="bg-primary/10 text-primary" />

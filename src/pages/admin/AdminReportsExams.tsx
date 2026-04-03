@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ExportData } from "@/lib/exportReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -86,7 +87,7 @@ const AdminReportsExams = () => {
     <AdminLayout>
       <div className="space-y-4">
         <div><h1 className="text-2xl font-bold text-foreground">تقارير الاختبارات</h1><p className="text-sm text-muted-foreground">{total} اختبار مكتمل</p></div>
-        <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate />
+        {(() => { const ed: ExportData = { title: "تقرير الاختبارات", summary: { "الإجمالي": total, "المعدل العام": `${overallAvg}%`, "نسبة النجاح": `${passRate}%` }, headers: ["التخصص", "عدد المحاولات", "المتوسط", "نسبة النجاح"], rows: majorStats.map((m) => [m.name, m.count, `${m.avg}%`, `${m.passRate}%`]) }; return <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate exportData={ed} exportFilename="تقرير_الاختبارات" />; })()}
         <div className="grid grid-cols-3 gap-3">
           <StatCard icon={ClipboardCheck} label="إجمالي الاختبارات" value={total} color="bg-primary/10 text-primary" />
           <StatCard icon={TrendingUp} label="المعدل العام" value={`${overallAvg}%`} color="bg-accent/10 text-accent" />
