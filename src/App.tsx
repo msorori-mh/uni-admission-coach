@@ -47,6 +47,7 @@ const App = () => (
           <Route path="/lessons/:id" element={<LessonDetail />} />
           <Route path="/exam" element={<ExamSimulator />} />
           <Route path="/exam-history" element={<ExamHistory />} />
+          <Route path="/performance" element={<StudentPerformance />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/universities" element={<AdminUniversities />} />
