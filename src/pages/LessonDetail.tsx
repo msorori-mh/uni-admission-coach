@@ -33,6 +33,9 @@ interface Question {
 
 const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { user, loading: authLoading, isStaff } = useAuth();
+  const navigate = useNavigate();
+  const { isActive: hasActiveSubscription, loading: subLoading } = useSubscription(user?.id);
   const { user, loading: authLoading } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
