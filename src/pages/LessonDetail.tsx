@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Lesson {
   id: string;
@@ -31,7 +33,10 @@ interface Question {
 
 const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isStaff } = useAuth();
+  const navigate = useNavigate();
+  const { isActive: hasActiveSubscription, loading: subLoading } = useSubscription(user?.id);
+  
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,13 +101,16 @@ const LessonDetail = () => {
     ? questions.filter((q) => answers[q.id] === q.correct_option).length
     : 0;
 
-  if (authLoading || loading) {
+  if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  // Content gating: staff can always access, students need active subscription
+  const canAccess = isStaff || hasActiveSubscription;
 
   if (!lesson) {
     return (
@@ -130,6 +138,21 @@ const LessonDetail = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {!canAccess ? (
+          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
+            <CardContent className="py-8 text-center">
+              <Lock className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+              <h2 className="text-lg font-bold text-yellow-700 dark:text-yellow-400">محتوى مقفل</h2>
+              <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-2">
+                يجب تفعيل اشتراكك للوصول إلى هذا المحتوى التعليمي
+              </p>
+              <Button className="mt-4" onClick={() => navigate("/subscription")}>
+                تفعيل الاشتراك
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
         {/* Completion button */}
         <div className="mb-4 flex items-center justify-between">
           {isCompleted ? (
@@ -265,6 +288,8 @@ const LessonDetail = () => {
             )}
           </TabsContent>
         </Tabs>
+        </>
+        )}
       </main>
     </div>
   );

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users, UserCog,
-  LogOut, ChevronLeft, BarChart3, FileText
+  LogOut, ChevronLeft, BarChart3, FileText, CreditCard, Wallet, ListChecks
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -16,6 +16,9 @@ const navItems = [
   { path: "/admin/students", label: "الطلاب", icon: Users },
   { path: "/admin/content", label: "المحتوى", icon: FileText },
   { path: "/admin/users", label: "المستخدمون", icon: UserCog },
+  { path: "/admin/subscription-plans", label: "خطط الاشتراك", icon: ListChecks },
+  { path: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
+  { path: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
   { path: "/admin/reports", label: "التقارير", icon: BarChart3 },
 ];
 

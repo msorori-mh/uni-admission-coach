@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   GraduationCap, ChevronLeft, Clock, AlertTriangle, CheckCircle2,
   XCircle, Loader2, Play, Trophy, RotateCcw
@@ -40,8 +41,9 @@ interface ExamAttempt {
 type Phase = "intro" | "exam" | "result";
 
 const ExamSimulator = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isStaff } = useAuth();
   const navigate = useNavigate();
+  const { isActive: hasActiveSubscription, loading: subLoading } = useSubscription(user?.id);
 
   const [student, setStudent] = useState<any>(null);
   const [majorName, setMajorName] = useState("");
@@ -212,7 +214,7 @@ const ExamSimulator = () => {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -240,8 +242,9 @@ const ExamSimulator = () => {
 
   // ---- INTRO PHASE ----
   if (phase === "intro") {
+    const canAccess = isStaff || hasActiveSubscription;
     const attemptsUsed = pastAttempts.length;
-    const canStart = attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
+    const canStart = canAccess && attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
     const questionsAvailable = Math.min(allQuestions.length, MAX_QUESTIONS);
 
     return (
@@ -278,9 +281,18 @@ const ExamSimulator = () => {
             </Card>
           )}
 
+          {!canAccess && (
+            <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
+              <CardContent className="py-4 text-center">
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">يجب تفعيل اشتراكك للوصول إلى الاختبارات</p>
+                <Button className="mt-2" size="sm" onClick={() => navigate("/subscription")}>تفعيل الاشتراك</Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Button onClick={startExam} disabled={!canStart} className="w-full" size="lg">
             <Play className="w-5 h-5 ml-2" />
-            {attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار"}
+            {!canAccess ? "يجب تفعيل الاشتراك أولاً" : attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار"}
           </Button>
 
           {/* Past attempts */}
