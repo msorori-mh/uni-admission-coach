@@ -281,9 +281,18 @@ const ExamSimulator = () => {
             </Card>
           )}
 
+          {!canAccess && (
+            <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
+              <CardContent className="py-4 text-center">
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">يجب تفعيل اشتراكك للوصول إلى الاختبارات</p>
+                <Button className="mt-2" size="sm" onClick={() => navigate("/subscription")}>تفعيل الاشتراك</Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Button onClick={startExam} disabled={!canStart} className="w-full" size="lg">
             <Play className="w-5 h-5 ml-2" />
-            {attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار"}
+            {!canAccess ? "يجب تفعيل الاشتراك أولاً" : attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار"}
           </Button>
 
           {/* Past attempts */}
