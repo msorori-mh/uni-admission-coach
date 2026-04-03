@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users, UserCog,
-  LogOut, ChevronLeft, BarChart3, FileText, CreditCard, Wallet, ListChecks
+  LogOut, ChevronLeft, ChevronDown, ChevronUp, BarChart3, FileText,
+  CreditCard, Wallet, ListChecks, DollarSign, ClipboardCheck,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
-const navItems = [
+const mainNavItems = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
   { path: "/admin/universities", label: "الجامعات", icon: Building2 },
   { path: "/admin/colleges", label: "الكليات", icon: Building2 },
@@ -19,16 +21,40 @@ const navItems = [
   { path: "/admin/subscription-plans", label: "إعدادات الاشتراك", icon: ListChecks },
   { path: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
   { path: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
-  { path: "/admin/reports", label: "التقارير", icon: BarChart3 },
+];
+
+const reportSubItems = [
+  { path: "/admin/reports/students", label: "الطلاب", icon: Users },
+  { path: "/admin/reports/payments", label: "الدفع والإيرادات", icon: DollarSign },
+  { path: "/admin/reports/subscriptions", label: "الاشتراكات", icon: ListChecks },
+  { path: "/admin/reports/exams", label: "الاختبارات", icon: ClipboardCheck },
 ];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isReportsRoute = location.pathname.startsWith("/admin/reports");
+  const [reportsOpen, setReportsOpen] = useState(isReportsRoute);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const renderNavLink = (item: { path: string; label: string; icon: any }) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+          isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        }`}
+      >
+        <item.icon className="w-4 h-4" />
+        {item.label}
+      </Link>
+    );
   };
 
   return (
@@ -47,41 +73,51 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </Link>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {mainNavItems.map(renderNavLink)}
+
+          {/* Reports collapsible */}
+          <button
+            onClick={() => setReportsOpen(!reportsOpen)}
+            className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+              isReportsRoute ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              التقارير
+            </div>
+            {reportsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {reportsOpen && (
+            <div className="mr-4 space-y-0.5 border-r-2 border-border pr-2">
+              {reportSubItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                      isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon className="w-3.5 h-3.5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         <div className="p-3 border-t space-y-1">
           <ThemeToggle variant="sidebar" />
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            لوحة الطالب
+          <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+            <ChevronLeft className="w-4 h-4" /> لوحة الطالب
           </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 w-full"
-          >
-            <LogOut className="w-4 h-4" />
-            تسجيل الخروج
+          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 w-full">
+            <LogOut className="w-4 h-4" /> تسجيل الخروج
           </button>
         </div>
       </aside>
@@ -104,17 +140,19 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Mobile nav */}
         <div className="md:hidden overflow-x-auto border-b bg-card">
           <div className="flex px-2 py-2 gap-1 min-w-max">
-            {navItems.map((item) => {
+            {mainNavItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                    isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
+                <Link key={item.path} to={item.path} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
                   {item.label}
+                </Link>
+              );
+            })}
+            {reportSubItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link key={item.path} to={item.path} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
+                  📊 {item.label}
                 </Link>
               );
             })}

@@ -21,6 +21,10 @@ import AdminColleges from "./pages/admin/AdminColleges";
 import AdminMajors from "./pages/admin/AdminMajors";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminReportsStudents from "./pages/admin/AdminReportsStudents";
+import AdminReportsPayments from "./pages/admin/AdminReportsPayments";
+import AdminReportsSubscriptions from "./pages/admin/AdminReportsSubscriptions";
+import AdminReportsExams from "./pages/admin/AdminReportsExams";
 import AdminContent from "./pages/admin/AdminContent";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSubscriptionPlans from "./pages/admin/AdminSubscriptionPlans";
@@ -55,6 +59,10 @@ const App = () => (
           <Route path="/admin/majors" element={<AdminMajors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/reports/students" element={<AdminReportsStudents />} />
+          <Route path="/admin/reports/payments" element={<AdminReportsPayments />} />
+          <Route path="/admin/reports/subscriptions" element={<AdminReportsSubscriptions />} />
+          <Route path="/admin/reports/exams" element={<AdminReportsExams />} />
           <Route path="/admin/content" element={<AdminContent />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlans />} />
