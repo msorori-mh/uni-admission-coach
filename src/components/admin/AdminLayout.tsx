@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users,
-  LogOut, ChevronLeft
+  LogOut, ChevronLeft, BarChart3
 } from "lucide-react";
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { path: "/admin/colleges", label: "الكليات", icon: Building2 },
   { path: "/admin/majors", label: "التخصصات", icon: BookOpen },
   { path: "/admin/students", label: "الطلاب", icon: Users },
+  { path: "/admin/reports", label: "التقارير", icon: BarChart3 },
 ];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
