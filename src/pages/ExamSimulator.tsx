@@ -242,8 +242,9 @@ const ExamSimulator = () => {
 
   // ---- INTRO PHASE ----
   if (phase === "intro") {
+    const canAccess = isStaff || hasActiveSubscription;
     const attemptsUsed = pastAttempts.length;
-    const canStart = attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
+    const canStart = canAccess && attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
     const questionsAvailable = Math.min(allQuestions.length, MAX_QUESTIONS);
 
     return (
