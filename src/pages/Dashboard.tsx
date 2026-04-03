@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { GraduationCap, LogOut, UserCircle, Bell, Shield } from "lucide-react";
+import { GraduationCap, LogOut, UserCircle, Bell, Shield, BookOpen } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 const Dashboard = () => {
