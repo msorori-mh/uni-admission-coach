@@ -30,7 +30,6 @@ const AdminPayments = () => {
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [methods, setMethods] = useState<{ id: string; name: string; type: string }[]>([]);
-  const [durationMonths, setDurationMonths] = useState(5);
   const [loading, setLoading] = useState(true);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [receiptDialog, setReceiptDialog] = useState(false);
