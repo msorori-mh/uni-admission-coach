@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users,
-  Calendar, LogOut, ChevronLeft, Settings, Bell
+  LogOut, ChevronLeft
 } from "lucide-react";
 
 const navItems = [
