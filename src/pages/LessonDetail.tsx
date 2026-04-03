@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface Lesson {
   id: string;
@@ -29,28 +30,42 @@ interface Question {
 
 const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   // Quiz state
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (authLoading || !id) return;
+    if (authLoading || !id || !user) return;
     const fetch = async () => {
-      const [{ data: l }, { data: q }] = await Promise.all([
+      const [{ data: l }, { data: q }, { data: s }] = await Promise.all([
         supabase.from("lessons").select("id, title, content, summary").eq("id", id).maybeSingle(),
         supabase.from("questions").select("*").eq("lesson_id", id).order("display_order"),
+        supabase.from("students").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
       if (l) setLesson(l as Lesson);
       if (q) setQuestions(q as Question[]);
+      if (s) {
+        setStudentId(s.id);
+        // Check if lesson is already completed
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("is_completed")
+          .eq("student_id", s.id)
+          .eq("lesson_id", id)
+          .maybeSingle();
+        if (progress?.is_completed) setIsCompleted(true);
+      }
       setLoading(false);
     };
     fetch();
-  }, [authLoading, id]);
+  }, [authLoading, id, user]);
 
   const handleAnswer = (questionId: string, option: string) => {
     if (submitted) return;
@@ -62,6 +77,18 @@ const LessonDetail = () => {
   const handleReset = () => {
     setAnswers({});
     setSubmitted(false);
+  };
+
+  const markComplete = async () => {
+    if (!studentId || !id) return;
+    const { error } = await supabase.from("lesson_progress").upsert(
+      { student_id: studentId, lesson_id: id, is_completed: true, completed_at: new Date().toISOString() },
+      { onConflict: "student_id,lesson_id" }
+    );
+    if (!error) {
+      setIsCompleted(true);
+      toast.success("تم تحديد الدرس كمكتمل ✓");
+    }
   };
 
   const correctCount = submitted
@@ -99,6 +126,19 @@ const LessonDetail = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* Completion button */}
+        <div className="mb-4 flex items-center justify-between">
+          {isCompleted ? (
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 gap-1">
+              <Check className="w-3 h-3" /> مكتمل
+            </Badge>
+          ) : (
+            <Button variant="outline" size="sm" onClick={markComplete} className="gap-1">
+              <Check className="w-4 h-4" /> تحديد كمكتمل
+            </Button>
+          )}
+        </div>
+
         <Tabs defaultValue="content" dir="rtl">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="content" className="flex items-center gap-1"><FileText className="w-4 h-4" />الشرح</TabsTrigger>

@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [attempts, setAttempts] = useState<ExamAttemptRow[]>([]);
   const [lessonCount, setLessonCount] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,17 +52,20 @@ const Dashboard = () => {
       if (s) {
         setStudent(s);
         // Fetch exam attempts and lesson count for this student
-        const [{ data: exams }, { data: lessons }] = await Promise.all([
+        const [{ data: exams }, { data: lessons }, { data: progress }] = await Promise.all([
           supabase.from("exam_attempts").select("id, score, total, completed_at, major_id")
             .eq("student_id", s.id).not("completed_at", "is", null)
             .order("completed_at", { ascending: true }),
           s.major_id
-            ? supabase.from("lessons").select("id", { count: "exact", head: true })
+            ? supabase.from("lessons").select("id")
                 .eq("major_id", s.major_id).eq("is_published", true)
-            : Promise.resolve({ data: null, count: 0 }),
+            : Promise.resolve({ data: [] }),
+          supabase.from("lesson_progress").select("id")
+            .eq("student_id", s.id).eq("is_completed", true),
         ]);
         if (exams) setAttempts(exams);
-        setLessonCount((lessons as any)?.length ?? 0);
+        setLessonCount(lessons?.length ?? 0);
+        setCompletedLessons(progress?.length ?? 0);
       }
       if (roles) setIsStaff(roles.some((r) => r.role === "admin" || r.role === "moderator"));
       setUnreadCount((notifs as any)?.count ?? 0);
@@ -131,6 +135,7 @@ const Dashboard = () => {
     { path: "/profile", title: "الملف الشخصي", desc: "عرض وتعديل بياناتك", icon: UserCircle, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
     { path: "/lessons", title: "المحتوى التعليمي", desc: "تدرّب على الدروس والأسئلة", icon: BookOpen, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
     { path: "/exam", title: "محاكاة الاختبار", desc: "45 سؤال في 90 دقيقة", icon: ClipboardCheck, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
+    { path: "/exam-history", title: "سجل الاختبارات", desc: "عرض محاولاتك السابقة", icon: Trophy, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
     { path: "/notifications", title: "الإشعارات", desc: "آخر التحديثات", icon: Bell, color: "border-r-accent", iconColor: "text-accent", bgColor: "bg-accent/10", badge: unreadCount },
   ];
 
@@ -180,6 +185,30 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Lesson Progress */}
+        {lessonCount > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-secondary" />
+                تقدم الدروس
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">الدروس المكتملة</span>
+                <span className="font-semibold text-foreground">{completedLessons}/{lessonCount}</span>
+              </div>
+              <Progress value={lessonCount > 0 ? (completedLessons / lessonCount) * 100 : 0} className="h-3" />
+              <p className="text-xs text-muted-foreground">
+                {completedLessons === lessonCount && lessonCount > 0
+                  ? "🎉 أكملت جميع الدروس!"
+                  : `${lessonCount - completedLessons} درس متبقي`}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Performance Progress */}

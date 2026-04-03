@@ -12,6 +12,7 @@ import Notifications from "./pages/Notifications";
 import LessonsList from "./pages/LessonsList";
 import LessonDetail from "./pages/LessonDetail";
 import ExamSimulator from "./pages/ExamSimulator";
+import ExamHistory from "./pages/ExamHistory";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUniversities from "./pages/admin/AdminUniversities";
 import AdminColleges from "./pages/admin/AdminColleges";
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/lessons" element={<LessonsList />} />
           <Route path="/lessons/:id" element={<LessonDetail />} />
           <Route path="/exam" element={<ExamSimulator />} />
+          <Route path="/exam-history" element={<ExamHistory />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/admin/colleges" element={<AdminColleges />} />
