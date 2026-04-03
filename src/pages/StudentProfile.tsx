@@ -330,39 +330,40 @@ const StudentProfile = () => {
               </Select>
             </div>
 
-            {universityId && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">الكلية</Label>
-                <Select
-                  value={collegeId}
-                  onValueChange={(v) => {
-                    setCollegeId(v);
-                    setMajorId("");
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="اختر الكلية" /></SelectTrigger>
-                  <SelectContent>
-                    {colleges.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label className="text-xs">الكلية</Label>
+              <Select
+                value={collegeId}
+                onValueChange={(v) => {
+                  setCollegeId(v);
+                  setMajorId("");
+                }}
+                disabled={!universityId || colleges.length === 0}
+              >
+                <SelectTrigger><SelectValue placeholder={!universityId ? "اختر الجامعة أولاً" : "اختر الكلية"} /></SelectTrigger>
+                <SelectContent>
+                  {colleges.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {collegeId && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">التخصص</Label>
-                <Select value={majorId} onValueChange={setMajorId}>
-                  <SelectTrigger><SelectValue placeholder="اختر التخصص" /></SelectTrigger>
-                  <SelectContent>
-                    {majors.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name_ar}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label className="text-xs">التخصص</Label>
+              <Select
+                value={majorId}
+                onValueChange={setMajorId}
+                disabled={!collegeId || majors.length === 0}
+              >
+                <SelectTrigger><SelectValue placeholder={!collegeId ? "اختر الكلية أولاً" : "اختر التخصص"} /></SelectTrigger>
+                <SelectContent>
+                  {majors.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name_ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
