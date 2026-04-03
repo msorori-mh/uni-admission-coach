@@ -249,6 +249,122 @@ const AdminContent = () => {
     else { toast({ title: "تم الحذف" }); fetchData(); }
   };
 
+  // --- Import ---
+  const downloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const lessonsData = [
+      ["عنوان الدرس", "المحتوى", "الملخص", "ترتيب العرض", "منشور (نعم/لا)"],
+      ["مثال: مقدمة في البرمجة", "محتوى الدرس هنا...", "ملخص قصير", 1, "نعم"],
+    ];
+    const questionsData = [
+      ["عنوان الدرس", "نص السؤال", "الخيار أ", "الخيار ب", "الخيار ج", "الخيار د", "الإجابة الصحيحة (a/b/c/d)", "الشرح"],
+      ["مقدمة في البرمجة", "ما هي لغة البرمجة؟", "أداة تصميم", "لغة حاسوب", "جهاز", "شبكة", "b", "لغة البرمجة هي لغة يفهمها الحاسوب"],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lessonsData), "الدروس");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(questionsData), "الأسئلة");
+    XLSX.writeFile(wb, "قالب_استيراد_المحتوى.xlsx");
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !importMajorId) return;
+    setImporting(true);
+
+    try {
+      const data = await file.arrayBuffer();
+      let lessonsSheet: any[][] = [];
+      let questionsSheet: any[][] = [];
+
+      if (file.name.endsWith(".csv")) {
+        const text = new TextDecoder("utf-8").decode(data);
+        const wb = XLSX.read(text, { type: "string" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+        // Detect if CSV is lessons or questions by column count
+        if (rows[0] && (rows[0] as any[]).length >= 7) {
+          questionsSheet = rows;
+        } else {
+          lessonsSheet = rows;
+        }
+      } else {
+        const wb = XLSX.read(data, { type: "array" });
+        wb.SheetNames.forEach((name) => {
+          const sheet = wb.Sheets[name];
+          const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+          if (name.includes("سئلة") || name.includes("question")) {
+            questionsSheet = rows;
+          } else {
+            lessonsSheet = rows;
+          }
+        });
+      }
+
+      // Import lessons (skip header row)
+      const lessonMap = new Map<string, string>(); // title -> id
+      if (lessonsSheet.length > 1) {
+        for (let i = 1; i < lessonsSheet.length; i++) {
+          const row = lessonsSheet[i] as any[];
+          if (!row[0]) continue;
+          const title = String(row[0]).trim();
+          const { data: inserted, error } = await supabase.from("lessons").insert({
+            major_id: importMajorId,
+            title,
+            content: row[1] ? String(row[1]) : "",
+            summary: row[2] ? String(row[2]) : "",
+            display_order: row[3] ? Number(row[3]) : i,
+            is_published: row[4] ? String(row[4]).includes("نعم") || String(row[4]).toLowerCase() === "true" : false,
+          }).select("id").single();
+          if (error) {
+            toast({ variant: "destructive", title: `خطأ في درس "${title}": ${error.message}` });
+          } else if (inserted) {
+            lessonMap.set(title, inserted.id);
+          }
+        }
+      }
+
+      // Import questions (skip header row)
+      if (questionsSheet.length > 1) {
+        // If no lessons were imported, map existing lessons
+        if (lessonMap.size === 0) {
+          lessons.filter(l => l.major_id === importMajorId).forEach(l => lessonMap.set(l.title, l.id));
+        }
+
+        for (let i = 1; i < questionsSheet.length; i++) {
+          const row = questionsSheet[i] as any[];
+          if (!row[0] || !row[1]) continue;
+          const lessonTitle = String(row[0]).trim();
+          const lessonId = lessonMap.get(lessonTitle);
+          if (!lessonId) {
+            toast({ variant: "destructive", title: `لم يتم العثور على درس "${lessonTitle}" - تخطي السؤال ${i}` });
+            continue;
+          }
+          const { error } = await supabase.from("questions").insert({
+            lesson_id: lessonId,
+            question_text: String(row[1]),
+            option_a: String(row[2] || ""),
+            option_b: String(row[3] || ""),
+            option_c: String(row[4] || ""),
+            option_d: String(row[5] || ""),
+            correct_option: String(row[6] || "a").toLowerCase().trim(),
+            explanation: row[7] ? String(row[7]) : "",
+            display_order: i,
+          });
+          if (error) {
+            toast({ variant: "destructive", title: `خطأ في سؤال ${i}: ${error.message}` });
+          }
+        }
+      }
+
+      toast({ title: "تم الاستيراد بنجاح" });
+      fetchData();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: `خطأ في قراءة الملف: ${err.message}` });
+    }
+    setImporting(false);
+    setImportDialogOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   if (authLoading || loading) return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
 
   const lessonQuestions = selectedLesson ? questions.filter((q) => q.lesson_id === selectedLesson) : [];
