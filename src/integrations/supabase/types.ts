@@ -537,6 +537,8 @@ export type Database = {
           duration_months: number
           id: string
           price: number
+          price_zone_a: number
+          price_zone_b: number
           updated_at: string
         }
         Insert: {
@@ -545,6 +547,8 @@ export type Database = {
           duration_months?: number
           id?: string
           price?: number
+          price_zone_a?: number
+          price_zone_b?: number
           updated_at?: string
         }
         Update: {
@@ -553,6 +557,8 @@ export type Database = {
           duration_months?: number
           id?: string
           price?: number
+          price_zone_a?: number
+          price_zone_b?: number
           updated_at?: string
         }
         Relationships: []
