@@ -288,6 +288,8 @@ const LessonDetail = () => {
             )}
           </TabsContent>
         </Tabs>
+        </>
+        )}
       </main>
     </div>
   );
