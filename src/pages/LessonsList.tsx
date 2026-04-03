@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { GraduationCap, BookOpen, ArrowRight, ChevronLeft, Loader2 } from "lucide-react";
+import { GraduationCap, BookOpen, ArrowRight, ChevronLeft, Loader2, CheckCircle2 } from "lucide-react";
 
 interface Lesson {
   id: string;
@@ -23,6 +24,7 @@ const LessonsList = () => {
   const [majorName, setMajorName] = useState("");
   const [loading, setLoading] = useState(true);
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -39,18 +41,28 @@ const LessonsList = () => {
       if (major) setMajorName(major.name_ar);
       if (ls) {
         setLessons(ls as Lesson[]);
-        // Fetch question counts
-        const { data: qs } = await supabase.from("questions").select("lesson_id").in("lesson_id", ls.map((l: any) => l.id));
+        // Fetch question counts and progress in parallel
+        const [{ data: qs }, { data: progress }] = await Promise.all([
+          supabase.from("questions").select("lesson_id").in("lesson_id", ls.map((l: any) => l.id)),
+          supabase.from("lesson_progress").select("lesson_id")
+            .eq("student_id", s.id).eq("is_completed", true)
+            .in("lesson_id", ls.map((l: any) => l.id)),
+        ]);
         if (qs) {
           const counts: Record<string, number> = {};
           qs.forEach((q: any) => { counts[q.lesson_id] = (counts[q.lesson_id] || 0) + 1; });
           setQuestionCounts(counts);
+        }
+        if (progress) {
+          setCompletedLessons(new Set(progress.map((p: any) => p.lesson_id)));
         }
       }
       setLoading(false);
     };
     fetch();
   }, [authLoading, user]);
+
+  const progressPct = lessons.length > 0 ? Math.round((completedLessons.size / lessons.length) * 100) : 0;
 
   if (authLoading || loading) {
     return (
@@ -84,10 +96,23 @@ const LessonsList = () => {
           </div>
         ) : (
           <>
-            <div className="mb-6">
+            <div className="mb-4">
               <h1 className="text-2xl font-bold text-foreground">دروس {majorName}</h1>
               <p className="text-sm text-muted-foreground">{lessons.length} درس متاح للتدريب</p>
             </div>
+
+            {/* Progress bar */}
+            {lessons.length > 0 && (
+              <Card className="mb-5">
+                <CardContent className="py-4 px-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">نسبة الإنجاز</span>
+                    <span className="font-semibold text-foreground">{completedLessons.size}/{lessons.length} ({progressPct}%)</span>
+                  </div>
+                  <Progress value={progressPct} className="h-2.5" />
+                </CardContent>
+              </Card>
+            )}
 
             {lessons.length === 0 && (
               <div className="text-center py-12">
@@ -97,29 +122,39 @@ const LessonsList = () => {
             )}
 
             <div className="space-y-3">
-              {lessons.map((lesson, i) => (
-                <Link key={lesson.id} to={`/lessons/${lesson.id}`} className="block">
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer border-r-4 border-r-primary">
-                    <CardContent className="py-4 px-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                            <p className="font-semibold text-foreground">{lesson.title}</p>
+              {lessons.map((lesson, i) => {
+                const done = completedLessons.has(lesson.id);
+                return (
+                  <Link key={lesson.id} to={`/lessons/${lesson.id}`} className="block">
+                    <Card className={`hover:shadow-md transition-shadow cursor-pointer border-r-4 ${done ? "border-r-green-500" : "border-r-primary"}`}>
+                      <CardContent className="py-4 px-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-7 h-7 rounded-full text-sm font-bold flex items-center justify-center shrink-0 ${done ? "bg-green-100 text-green-600 dark:bg-green-950/30" : "bg-primary/10 text-primary"}`}>
+                                {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                              </span>
+                              <p className="font-semibold text-foreground">{lesson.title}</p>
+                            </div>
+                            {lesson.summary && <p className="text-sm text-muted-foreground mt-1 mr-9 line-clamp-2">{lesson.summary}</p>}
+                            <div className="mt-2 mr-9 flex gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {questionCounts[lesson.id] || 0} سؤال
+                              </Badge>
+                              {done && (
+                                <Badge className="text-xs bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                                  مكتمل
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          {lesson.summary && <p className="text-sm text-muted-foreground mt-1 mr-9 line-clamp-2">{lesson.summary}</p>}
-                          <div className="mt-2 mr-9">
-                            <Badge variant="outline" className="text-xs">
-                              {questionCounts[lesson.id] || 0} سؤال
-                            </Badge>
-                          </div>
+                          <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 mr-2" />
                         </div>
-                        <ArrowRight className="w-5 h-5 text-muted-foreground shrink-0 mr-2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </>
         )}
