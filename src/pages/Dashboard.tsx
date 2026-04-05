@@ -136,6 +136,7 @@ const Dashboard = () => {
     { path: "/profile", title: "الملف الشخصي", desc: "عرض وتعديل بياناتك", icon: UserCircle, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
     { path: "/subscription", title: "الاشتراك", desc: "إدارة اشتراكك والدفع", icon: CreditCard, color: "border-r-accent", iconColor: "text-accent", bgColor: "bg-accent/10" },
     { path: "/lessons", title: "المحتوى التعليمي", desc: "تدرّب على الدروس والأسئلة", icon: BookOpen, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
+    { path: "/search", title: "البحث المتقدم", desc: "ابحث في الدروس والأسئلة بالتخصص والكلية", icon: Search, color: "border-r-accent", iconColor: "text-accent", bgColor: "bg-accent/10" },
     { path: "/exam", title: "محاكاة الاختبار", desc: "45 سؤال في 90 دقيقة", icon: ClipboardCheck, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
     { path: "/exam-history", title: "سجل الاختبارات", desc: "عرض محاولاتك السابقة", icon: Trophy, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
     { path: "/performance", title: "تحليل الأداء", desc: "مقارنة بالزملاء ونقاط القوة والضعف", icon: BarChart3, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
