@@ -9,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
-  GraduationCap, ChevronRight, Loader2, Trophy, TrendingUp,
-  Target, Users, BookOpen, BarChart3, CheckCircle, XCircle, Clock,
+  ChevronRight, Loader2, Trophy, TrendingUp,
+  Target, Users, BookOpen, BarChart3, CheckCircle, XCircle,
   Flame, Award,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, LineChart, Line,
+  PolarAngleAxis, PolarRadiusAxis,
   PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 
