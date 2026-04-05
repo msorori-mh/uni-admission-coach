@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, LineChart, Line, ResponsiveContainer } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 interface ExamAttemptRow {
   id: string;
