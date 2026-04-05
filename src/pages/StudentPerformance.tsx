@@ -160,13 +160,6 @@ const StudentPerformance = () => {
     };
   });
 
-  // Per-lesson question count
-  const lessonQuestionCount = lessons.map((l) => ({
-    name: l.title.length > 15 ? l.title.slice(0, 13) + "…" : l.title,
-    questions: questions.filter((q) => q.lesson_id === l.id).length,
-    completed: completedLessonIds.has(l.id),
-  })).filter((d) => d.questions > 0);
-
   // Performance level
   const getLevel = (avg: number) => {
     if (avg >= 90) return { label: "متميز", color: "text-green-600", icon: Award };
