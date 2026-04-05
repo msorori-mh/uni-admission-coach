@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock } from "lucide-react";
+import { ChevronLeft, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock, Star } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import LessonReviews from "@/components/LessonReviews";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -167,10 +168,11 @@ const LessonDetail = () => {
         </div>
 
         <Tabs defaultValue="content" dir="rtl">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="content" className="flex items-center gap-1"><FileText className="w-4 h-4" />الشرح</TabsTrigger>
-            <TabsTrigger value="summary" className="flex items-center gap-1"><BookOpen className="w-4 h-4" />الملخص</TabsTrigger>
-            <TabsTrigger value="quiz" className="flex items-center gap-1"><HelpCircle className="w-4 h-4" />الأسئلة</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="content" className="flex items-center gap-1 text-xs"><FileText className="w-3.5 h-3.5" />الشرح</TabsTrigger>
+            <TabsTrigger value="summary" className="flex items-center gap-1 text-xs"><BookOpen className="w-3.5 h-3.5" />الملخص</TabsTrigger>
+            <TabsTrigger value="quiz" className="flex items-center gap-1 text-xs"><HelpCircle className="w-3.5 h-3.5" />الأسئلة</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex items-center gap-1 text-xs"><Star className="w-3.5 h-3.5" />التقييمات</TabsTrigger>
           </TabsList>
 
           <TabsContent value="content" className="mt-4">
@@ -286,6 +288,10 @@ const LessonDetail = () => {
                 )}
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="reviews" className="mt-4">
+            <LessonReviews lessonId={id!} studentId={studentId} />
           </TabsContent>
         </Tabs>
         </>
