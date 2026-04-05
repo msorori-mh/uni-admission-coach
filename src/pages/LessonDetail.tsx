@@ -168,10 +168,11 @@ const LessonDetail = () => {
         </div>
 
         <Tabs defaultValue="content" dir="rtl">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="content" className="flex items-center gap-1"><FileText className="w-4 h-4" />الشرح</TabsTrigger>
-            <TabsTrigger value="summary" className="flex items-center gap-1"><BookOpen className="w-4 h-4" />الملخص</TabsTrigger>
-            <TabsTrigger value="quiz" className="flex items-center gap-1"><HelpCircle className="w-4 h-4" />الأسئلة</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="content" className="flex items-center gap-1 text-xs"><FileText className="w-3.5 h-3.5" />الشرح</TabsTrigger>
+            <TabsTrigger value="summary" className="flex items-center gap-1 text-xs"><BookOpen className="w-3.5 h-3.5" />الملخص</TabsTrigger>
+            <TabsTrigger value="quiz" className="flex items-center gap-1 text-xs"><HelpCircle className="w-3.5 h-3.5" />الأسئلة</TabsTrigger>
+            <TabsTrigger value="reviews" className="flex items-center gap-1 text-xs"><Star className="w-3.5 h-3.5" />التقييمات</TabsTrigger>
           </TabsList>
 
           <TabsContent value="content" className="mt-4">
