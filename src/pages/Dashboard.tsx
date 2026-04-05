@@ -77,6 +77,21 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Realtime: update unread count when new notification arrives
+  useRealtimeNotifications(user?.id);
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`dashboard-notif-count-${user.id}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "notifications",
+        filter: `user_id=eq.${user.id}`,
+      }, () => setUnreadCount((c) => c + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
