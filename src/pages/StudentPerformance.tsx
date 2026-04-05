@@ -38,11 +38,6 @@ const tooltipStyle = {
   borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px",
 };
 
-const COLORS = [
-  "hsl(var(--primary))", "hsl(var(--accent))",
-  "hsl(var(--secondary))", "hsl(var(--muted-foreground))",
-];
-
 const StudentPerformance = () => {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
