@@ -7,6 +7,31 @@ import ReactMarkdown from "react-markdown";
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const DAILY_LIMIT = 20;
+const STORAGE_KEY = "mufadala_chat_usage";
+
+function getDailyUsage(): { count: number; date: string } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const today = new Date().toDateString();
+      if (parsed.date === today) return parsed;
+    }
+  } catch {}
+  return { count: 0, date: new Date().toDateString() };
+}
+
+function incrementUsage() {
+  const usage = getDailyUsage();
+  usage.count += 1;
+  usage.date = new Date().toDateString();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
+}
+
+function getRemainingMessages(): number {
+  return Math.max(0, DAILY_LIMIT - getDailyUsage().count);
+}
 
 async function streamChat({
   messages,
