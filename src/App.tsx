@@ -38,8 +38,14 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import NotFound from "./pages/NotFound";
 import MobileBottomNav from "./components/MobileBottomNav";
 import ChatWidget from "./components/ChatWidget";
+import { useOfflineExamSync } from "./hooks/useOfflineExamSync";
 
 const queryClient = new QueryClient();
+
+function OfflineExamSyncProvider({ children }: { children: React.ReactNode }) {
+  useOfflineExamSync();
+  return <>{children}</>;
+}
 
 function App() {
   return (
