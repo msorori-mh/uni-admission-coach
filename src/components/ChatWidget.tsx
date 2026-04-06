@@ -175,7 +175,7 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-primary/5 rounded-t-2xl">
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
-              <span className="font-bold text-sm text-foreground">مساعد مفاضلة</span>
+              <span className="font-bold text-sm text-foreground">مساعد قَبُول</span>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
               <X className="h-4 w-4" />
