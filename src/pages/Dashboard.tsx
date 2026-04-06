@@ -201,9 +201,11 @@ const Dashboard = () => {
         {/* Welcome */}
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">مرحباً، {userName}</h1>
-          <p className="text-muted-foreground">
-            {student?.gpa ? `معدلك: ${student.gpa}% • ابدأ التدريب على تخصصك الآن` : "أكمل ملفك الشخصي للبدء"}
-          </p>
+          {!isAdmin && (
+            <p className="text-muted-foreground">
+              {student?.gpa ? `معدلك: ${student.gpa}% • ابدأ التدريب على تخصصك الآن` : "أكمل ملفك الشخصي للبدء"}
+            </p>
+          )}
         </div>
 
         {/* Motivational Banner */}
