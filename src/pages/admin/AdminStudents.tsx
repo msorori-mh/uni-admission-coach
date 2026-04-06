@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useModeratorScope } from "@/hooks/useModeratorScope";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Pencil, Trash2, Eye } from "lucide-react";
+import { Loader2, Search, Pencil, Trash2, Eye, Filter, X, Users } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 const AdminStudents = () => {
@@ -22,6 +22,14 @@ const AdminStudents = () => {
   const [majors, setMajors] = useState<Tables<"majors">[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Filter state
+  const [filterGovernorate, setFilterGovernorate] = useState("");
+  const [filterUniversityId, setFilterUniversityId] = useState("");
+  const [filterCollegeId, setFilterCollegeId] = useState("");
+  const [filterMajorId, setFilterMajorId] = useState("");
+
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Tables<"students"> | null>(null);
@@ -69,18 +77,53 @@ const AdminStudents = () => {
 
   const scopedStudents = useMemo(() => {
     const allowed = getAllowedMajorIds();
-    if (!allowed) return students; // null = no restriction
+    if (!allowed) return students;
     return students.filter((s) => s.major_id && allowed.has(s.major_id));
   }, [students, getAllowedMajorIds, isAdmin]);
 
-  const filteredColleges = universityId ? colleges.filter((c) => c.university_id === universityId) : colleges;
-  const filteredMajors = collegeId ? majors.filter((m) => m.college_id === collegeId) : majors;
+  // Extract unique governorates
+  const governorates = useMemo(() => {
+    const set = new Set<string>();
+    scopedStudents.forEach((s) => { if (s.governorate) set.add(s.governorate); });
+    return Array.from(set).sort();
+  }, [scopedStudents]);
 
-  const filtered = scopedStudents.filter((s) => {
-    if (!search) return true;
-    const name = getFullName(s).toLowerCase();
-    return name.includes(search.toLowerCase()) || s.coordination_number?.includes(search);
-  });
+  // Cascading filter lists
+  const filterCollegesList = filterUniversityId
+    ? colleges.filter((c) => c.university_id === filterUniversityId)
+    : colleges;
+  const filterMajorsList = filterCollegeId
+    ? majors.filter((m) => m.college_id === filterCollegeId)
+    : majors;
+
+  // Edit dialog cascading
+  const editFilteredColleges = universityId ? colleges.filter((c) => c.university_id === universityId) : colleges;
+  const editFilteredMajors = collegeId ? majors.filter((m) => m.college_id === collegeId) : majors;
+
+  const hasActiveFilter = !!(filterGovernorate || filterUniversityId || filterCollegeId || filterMajorId);
+
+  const filtered = useMemo(() => {
+    if (!hasActiveFilter) return [];
+    return scopedStudents.filter((s) => {
+      if (filterGovernorate && s.governorate !== filterGovernorate) return false;
+      if (filterUniversityId && s.university_id !== filterUniversityId) return false;
+      if (filterCollegeId && s.college_id !== filterCollegeId) return false;
+      if (filterMajorId && s.major_id !== filterMajorId) return false;
+      if (search) {
+        const name = getFullName(s).toLowerCase();
+        return name.includes(search.toLowerCase()) || s.coordination_number?.includes(search);
+      }
+      return true;
+    });
+  }, [scopedStudents, filterGovernorate, filterUniversityId, filterCollegeId, filterMajorId, search, hasActiveFilter]);
+
+  const clearFilters = () => {
+    setFilterGovernorate("");
+    setFilterUniversityId("");
+    setFilterCollegeId("");
+    setFilterMajorId("");
+    setSearch("");
+  };
 
   const openEdit = (s: Tables<"students">) => {
     setEditing(s);
@@ -137,39 +180,122 @@ const AdminStudents = () => {
   return (
     <AdminLayout>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold">الطلاب</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} طالب</p>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">الطلاب</h1>
+            <p className="text-sm text-muted-foreground">{scopedStudents.length} طالب مسجل</p>
+          </div>
+          {hasActiveFilter && (
+            <Button variant="outline" size="sm" onClick={clearFilters} className="gap-1">
+              <X className="w-4 h-4" />
+              مسح الفلاتر
+            </Button>
+          )}
         </div>
 
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="بحث بالاسم أو رقم التنسيق..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
-        </div>
+        {/* Filters */}
+        <Card>
+          <CardContent className="py-4 px-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">فلترة الطلاب</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">المحافظة</Label>
+                <select
+                  value={filterGovernorate}
+                  onChange={(e) => setFilterGovernorate(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  <option value="">الكل</option>
+                  {governorates.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">الجامعة</Label>
+                <select
+                  value={filterUniversityId}
+                  onChange={(e) => { setFilterUniversityId(e.target.value); setFilterCollegeId(""); setFilterMajorId(""); }}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  <option value="">الكل</option>
+                  {universities.map((u) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">الكلية</Label>
+                <select
+                  value={filterCollegeId}
+                  onChange={(e) => { setFilterCollegeId(e.target.value); setFilterMajorId(""); }}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  <option value="">الكل</option>
+                  {filterCollegesList.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">التخصص</Label>
+                <select
+                  value={filterMajorId}
+                  onChange={(e) => setFilterMajorId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  <option value="">الكل</option>
+                  {filterMajorsList.map((m) => <option key={m.id} value={m.id}>{m.name_ar}</option>)}
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-2">
-          {filtered.map((s) => (
-            <Card key={s.id}>
-              <CardContent className="py-3 px-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-sm">{getFullName(s)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getUniName(s.university_id)} • {getMajorName(s.major_id)}
-                    </p>
-                    {s.governorate && <p className="text-xs text-muted-foreground">{s.governorate}</p>}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {s.gpa && <Badge variant="secondary" className="text-xs">{s.gpa}%</Badge>}
-                    <Button variant="ghost" size="icon" onClick={() => openView(s)}><Eye className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
-                    {isAdmin && <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Content */}
+        {!hasActiveFilter ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Users className="w-16 h-16 text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground">اختر فلتراً لعرض الطلاب</h3>
+            <p className="text-sm text-muted-foreground/70 mt-1">استخدم الفلاتر أعلاه لتصفية الطلاب بحسب المحافظة أو الجامعة أو الكلية أو التخصص</p>
+          </div>
+        ) : (
+          <>
+            {/* Search within filtered results */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="بحث بالاسم أو رقم التنسيق..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" />
+            </div>
+
+            <p className="text-sm text-muted-foreground">{filtered.length} نتيجة</p>
+
+            <div className="space-y-2">
+              {filtered.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا توجد نتائج</p>
+              ) : (
+                filtered.map((s) => (
+                  <Card key={s.id}>
+                    <CardContent className="py-3 px-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-sm">{getFullName(s)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getUniName(s.university_id)} • {getMajorName(s.major_id)}
+                          </p>
+                          {s.governorate && <p className="text-xs text-muted-foreground">{s.governorate}</p>}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {s.gpa && <Badge variant="secondary" className="text-xs">{s.gpa}%</Badge>}
+                          <Button variant="ghost" size="icon" onClick={() => openView(s)}><Eye className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
+                          {isAdmin && <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* View Dialog */}
@@ -219,14 +345,14 @@ const AdminStudents = () => {
               <Label>الكلية</Label>
               <select value={collegeId} onChange={(e) => { setCollegeId(e.target.value); setMajorId(""); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">بدون</option>
-                {filteredColleges.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                {editFilteredColleges.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <Label>التخصص</Label>
               <select value={majorId} onChange={(e) => setMajorId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">بدون</option>
-                {filteredMajors.map((m) => <option key={m.id} value={m.id}>{m.name_ar}</option>)}
+                {editFilteredMajors.map((m) => <option key={m.id} value={m.id}>{m.name_ar}</option>)}
               </select>
             </div>
             <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "جاري الحفظ..." : "حفظ التعديلات"}</Button>
