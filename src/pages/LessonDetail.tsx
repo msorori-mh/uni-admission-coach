@@ -53,7 +53,7 @@ const LessonDetail = () => {
     if (authLoading || !id || !user) return;
     const fetch = async () => {
       const [{ data: l }, { data: q }, { data: s }] = await Promise.all([
-        supabase.from("lessons").select("id, title, content, summary").eq("id", id).maybeSingle(),
+        supabase.from("lessons").select("id, title, content, summary, is_free").eq("id", id).maybeSingle(),
         supabase.from("questions").select("*").eq("lesson_id", id).order("display_order"),
         supabase.from("students").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
