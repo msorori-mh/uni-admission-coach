@@ -129,7 +129,7 @@ const Subscription = () => {
       payment_method_id: selectedMethod.id,
       amount: studentPrice,
       currency: settings.currency,
-      receipt_url: urlData.publicUrl,
+      receipt_url: filePath,
       status: "pending",
     });
 
