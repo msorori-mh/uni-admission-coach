@@ -198,6 +198,9 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {/* Motivational Banner */}
+        <MotivationalBanner collegeName={collegeName} avgScore={avgScore} />
+
         {/* Stats Cards */}
         {totalExams > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
