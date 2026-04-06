@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   GraduationCap, ChevronLeft, Loader2, Search, MapPin, FileText,
@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 const CollegeGuide = () => {
-  const { loading: authLoading } = useAuth();
   const [universities, setUniversities] = useState<any[]>([]);
   const [colleges, setColleges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +20,7 @@ const CollegeGuide = () => {
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       const [{ data: u }, { data: c }] = await Promise.all([
         supabase.from("universities").select("*").eq("is_active", true).order("display_order"),
         supabase.from("colleges").select("*").eq("is_active", true).order("display_order"),
@@ -30,8 +29,8 @@ const CollegeGuide = () => {
       if (c) setColleges(c);
       setLoading(false);
     };
-    if (!authLoading) fetch();
-  }, [authLoading]);
+    fetchData();
+  }, []);
 
   const filtered = colleges
     .filter((c) => !filterUni || c.university_id === filterUni)
@@ -44,7 +43,7 @@ const CollegeGuide = () => {
 
   const getUniName = (id: string) => universities.find((u) => u.id === id)?.name_ar || "";
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
