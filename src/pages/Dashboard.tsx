@@ -162,21 +162,21 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <header className="gradient-primary text-white px-4 py-4">
+      <header className="gradient-primary text-white px-4 py-3 md:py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-6 h-6" />
-            <span className="text-lg font-bold">مفاضلة</span>
+            <span className="text-lg font-bold hidden sm:inline">مفاضلة</span>
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
             {isStaff && (
               <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/20 hover:text-white">
-                <Link to="/admin"><Shield className="w-4 h-4 ml-1" />الإدارة</Link>
+                <Link to="/admin"><Shield className="w-4 h-4 sm:ml-1" /><span className="hidden sm:inline">الإدارة</span></Link>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-white/20 hover:text-white">
-              <LogOut className="w-4 h-4 ml-1" />خروج
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-white/20 hover:text-white">
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
