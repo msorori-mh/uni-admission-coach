@@ -312,13 +312,30 @@ const ExamSimulator = () => {
   };
 
   const selectAnswer = (option: string) => {
+    if (showExplanation) return; // prevent double-click during explanation
     const q = examQuestions[currentIndex];
     const newAnswers = { ...answers, [q.id]: option };
     setAnswers(newAnswers);
 
-    setTimeout(() => {
-      moveToNext(newAnswers, examQuestions, currentIndex);
-    }, 300);
+    const isCorrect = option === q.correct_option;
+    if (isCorrect) {
+      // Correct: brief positive feedback then move on
+      setTimeout(() => {
+        setShowExplanation(false);
+        moveToNext(newAnswers, examQuestions, currentIndex);
+      }, 800);
+    } else {
+      // Wrong: pause timer, show explanation
+      setTimerPaused(true);
+      setShowExplanation(true);
+    }
+  };
+
+  const dismissExplanation = () => {
+    setShowExplanation(false);
+    setTimerPaused(false);
+    const newAnswers = answers;
+    moveToNext(newAnswers, examQuestions, currentIndex);
   };
 
   const formatTime = (seconds: number) => {
