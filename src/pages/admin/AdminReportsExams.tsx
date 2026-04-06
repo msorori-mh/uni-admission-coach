@@ -100,6 +100,7 @@ const AdminReportsExams = () => {
         {majorStats.length > 0 && <Card><CardHeader className="pb-2"><CardTitle className="text-base">نسبة النجاح حسب التخصص</CardTitle></CardHeader><CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={majorStats} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} /><YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} /><Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v}%`, "نسبة النجاح"]} /><Bar dataKey="passRate" name="نسبة النجاح" fill="#10b981" radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer></div></CardContent></Card>}
         {total === 0 && <p className="text-center text-muted-foreground py-8">لا توجد بيانات اختبارات بعد</p>}
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

@@ -109,6 +109,7 @@ const AdminReportsPayments = () => {
         {revenueChart.length > 1 && <Card><CardHeader className="pb-2"><CardTitle className="text-base">الإيرادات الشهرية</CardTitle></CardHeader><CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><LineChart data={revenueChart}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} /><YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="amount" name="الإيرادات" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} /></LineChart></ResponsiveContainer></div></CardContent></Card>}
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد بيانات دفع بعد</p>}
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

@@ -87,6 +87,7 @@ const AdminReportsSubscriptions = () => {
         {statusData.length > 0 && <Card><CardHeader className="pb-2"><CardTitle className="text-base">حالة الاشتراكات</CardTitle></CardHeader><CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value" nameKey="name" label={({ name, value }) => `${name}: ${value}`} labelLine={false} fontSize={11}>{statusData.map((d, i) => <Cell key={i} fill={d.fill} />)}</Pie><Tooltip contentStyle={tooltipStyle} /><Legend /></PieChart></ResponsiveContainer></div></CardContent></Card>}
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد بيانات اشتراكات بعد</p>}
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };
