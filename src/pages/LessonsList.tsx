@@ -41,7 +41,7 @@ const LessonsList = () => {
 
       const [{ data: major }, { data: ls }] = await Promise.all([
         supabase.from("majors").select("name_ar").eq("id", s.major_id).maybeSingle(),
-        supabase.from("lessons").select("id, major_id, title, summary, display_order")
+        supabase.from("lessons").select("id, major_id, title, summary, display_order, is_free")
           .eq("major_id", s.major_id).eq("is_published", true).order("display_order"),
       ]);
       if (major) setMajorName(major.name_ar);
