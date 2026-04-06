@@ -203,6 +203,7 @@ const AdminPaymentMethods = () => {
               <select value={type} onChange={(e) => setType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="bank">بنك</option>
                 <option value="exchange">شركة صرافة</option>
+                <option value="ewallet">محفظة إلكترونية</option>
               </select>
             </div>
             <div className="space-y-2"><Label>{type === "bank" ? "اسم البنك" : "اسم شركة الصرافة"} *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
