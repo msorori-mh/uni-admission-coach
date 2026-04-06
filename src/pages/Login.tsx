@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,8 +38,21 @@ const Login = () => {
         return;
       }
 
+      // Check if profile is complete
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id ?? "";
+      const { data: student } = await supabase
+        .from("students")
+        .select("major_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
       toast({ title: "تم تسجيل الدخول بنجاح" });
-      navigate("/dashboard");
+      if (!student?.major_id) {
+        navigate("/complete-profile");
+      } else {
+        navigate("/dashboard");
+      }
     } catch {
       toast({
         variant: "destructive",

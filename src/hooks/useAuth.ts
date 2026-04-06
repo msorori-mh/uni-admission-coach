@@ -29,6 +29,25 @@ export const useAuth = (requiredRole?: AppRole) => {
 
         if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes("admin")) {
           navigate("/dashboard");
+          setLoading(false);
+          return;
+        }
+
+        // Check profile completeness for students
+        if (userRoles.includes("student") && !userRoles.includes("admin") && !userRoles.includes("moderator")) {
+          const currentPath = window.location.pathname;
+          if (currentPath !== "/complete-profile") {
+            const { data: student } = await supabase
+              .from("students")
+              .select("major_id")
+              .eq("user_id", session.user.id)
+              .maybeSingle();
+            if (!student?.major_id) {
+              navigate("/complete-profile");
+              setLoading(false);
+              return;
+            }
+          }
         }
         setLoading(false);
       }
@@ -49,6 +68,25 @@ export const useAuth = (requiredRole?: AppRole) => {
 
       if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes("admin")) {
         navigate("/dashboard");
+        setLoading(false);
+        return;
+      }
+
+      // Check profile completeness for students
+      if (userRoles.includes("student") && !userRoles.includes("admin") && !userRoles.includes("moderator")) {
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/complete-profile") {
+          const { data: student } = await supabase
+            .from("students")
+            .select("major_id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (!student?.major_id) {
+            navigate("/complete-profile");
+            setLoading(false);
+            return;
+          }
+        }
       }
       setLoading(false);
     });
