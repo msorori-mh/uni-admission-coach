@@ -7,6 +7,31 @@ import ReactMarkdown from "react-markdown";
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const DAILY_LIMIT = 20;
+const STORAGE_KEY = "mufadala_chat_usage";
+
+function getDailyUsage(): { count: number; date: string } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const today = new Date().toDateString();
+      if (parsed.date === today) return parsed;
+    }
+  } catch {}
+  return { count: 0, date: new Date().toDateString() };
+}
+
+function incrementUsage() {
+  const usage = getDailyUsage();
+  usage.count += 1;
+  usage.date = new Date().toDateString();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
+}
+
+function getRemainingMessages(): number {
+  return Math.max(0, DAILY_LIMIT - getDailyUsage().count);
+}
 
 async function streamChat({
   messages,
@@ -77,6 +102,7 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [remaining, setRemaining] = useState(getRemainingMessages());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,6 +112,14 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
   const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    if (getRemainingMessages() <= 0) {
+      toast.error("لقد وصلت للحد اليومي من الرسائل (20 رسالة). حاول مرة أخرى غداً!");
+      return;
+    }
+
+    incrementUsage();
+    setRemaining(getRemainingMessages());
 
     const userMsg: Message = { role: "user", content: text };
     setInput("");
@@ -187,24 +221,35 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
 
           {/* Input */}
           <div className="border-t border-border p-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                send();
-              }}
-              className="flex gap-2"
-            >
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="اكتب سؤالك هنا..."
-                disabled={loading}
-                className="flex-1 bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground disabled:opacity-50"
-              />
-              <Button type="submit" size="icon" className="h-9 w-9 rounded-xl" disabled={loading || !input.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
+            {remaining <= 0 ? (
+              <p className="text-xs text-center text-destructive py-2">
+                لقد وصلت للحد اليومي (20 رسالة). حاول مرة أخرى غداً!
+              </p>
+            ) : (
+              <>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    send();
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="اكتب سؤالك هنا..."
+                    disabled={loading}
+                    className="flex-1 bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground disabled:opacity-50"
+                  />
+                  <Button type="submit" size="icon" className="h-9 w-9 rounded-xl" disabled={loading || !input.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+                <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+                  {remaining} رسالة متبقية اليوم
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
