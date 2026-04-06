@@ -768,7 +768,7 @@ const ExamSimulator = () => {
                           {" • "}الصحيحة: <span className="text-green-600">{(q as any)[`option_${q.correct_option}`]}</span>
                         </p>
                       )}
-                      {q.explanation && <p className="text-xs text-muted-foreground mt-1 bg-muted p-2 rounded">{q.explanation}</p>}
+                      {!isCorrect && q.explanation && <p className="text-xs text-muted-foreground mt-1 bg-muted p-2 rounded">{q.explanation}</p>}
                     </div>
                   </div>
                 </CardContent>
