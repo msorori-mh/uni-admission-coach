@@ -111,7 +111,7 @@ const Subscription = () => {
       return;
     }
 
-    const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(filePath);
+    // Store the file path (bucket is now private — use signed URLs to view)
 
     const { data: newSub, error: subErr } = await supabase.from("subscriptions").insert({
       user_id: user.id, status: "pending",
