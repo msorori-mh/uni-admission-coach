@@ -263,6 +263,7 @@ const AdminContent = () => {
       correct_option: correctOption,
       explanation,
       display_order: questionOrder,
+      subject: questionSubject,
     };
     if (editingQuestion) {
       const { error } = await supabase.from("questions").update(payload).eq("id", editingQuestion.id);
