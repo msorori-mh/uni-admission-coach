@@ -226,7 +226,7 @@ const ExamSimulator = () => {
 
   // Total timer
   useEffect(() => {
-    if (phase !== "exam") return;
+    if (phase !== "exam" || timerPaused) return;
     timerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -237,7 +237,7 @@ const ExamSimulator = () => {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase, answers, examQuestions, finishExam]);
+  }, [phase, answers, examQuestions, finishExam, timerPaused]);
 
   // Per-question timer
   useEffect(() => {
