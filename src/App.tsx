@@ -75,6 +75,7 @@ const App = () => (
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <MobileBottomNav />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
