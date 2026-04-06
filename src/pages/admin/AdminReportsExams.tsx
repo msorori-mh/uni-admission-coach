@@ -4,6 +4,7 @@ import type { ExportData } from "@/lib/exportReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import ReportFilters, { type ReportFilterValues } from "@/components/admin/ReportFilters";
 import { Loader2, ClipboardCheck, TrendingUp, BookOpen } from "lucide-react";
 import {
