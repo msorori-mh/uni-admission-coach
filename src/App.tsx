@@ -16,6 +16,7 @@ import ExamHistory from "./pages/ExamHistory";
 import StudentPerformance from "./pages/StudentPerformance";
 import Subscription from "./pages/Subscription";
 import SearchContent from "./pages/SearchContent";
+import Leaderboard from "./pages/Leaderboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUniversities from "./pages/admin/AdminUniversities";
 import AdminColleges from "./pages/admin/AdminColleges";
