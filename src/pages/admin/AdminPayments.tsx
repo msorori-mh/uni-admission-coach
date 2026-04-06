@@ -37,6 +37,7 @@ const AdminPayments = () => {
   const [adminNotes, setAdminNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("pending");
+  const [signedReceiptUrl, setSignedReceiptUrl] = useState<string | null>(null);
 
   const fetchData = async () => {
     const [{ data: r }, { data: s }, { data: m }] = await Promise.all([
