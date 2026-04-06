@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import CompleteProfile from "./pages/CompleteProfile";
 import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
 import StudentProfile from "./pages/StudentProfile";
