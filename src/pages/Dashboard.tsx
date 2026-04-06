@@ -182,7 +182,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 pb-20 md:pb-6 space-y-6">
         {/* Welcome */}
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">مرحباً، {userName}</h1>
