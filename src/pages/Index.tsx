@@ -48,10 +48,10 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button
               size="lg"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
               className="bg-secondary text-secondary-foreground hover:bg-secondary/90 text-base font-bold px-8 py-6 rounded-xl shadow-lg"
             >
-              إنشاء حساب جديد
+              ابدأ الآن
             </Button>
             <Button
               size="lg"
