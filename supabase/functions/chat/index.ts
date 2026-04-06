@@ -6,6 +6,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// In-memory IP rate limiting (resets on cold start, but provides server-side protection)
+const DAILY_LIMIT = 20;
+const ipUsage = new Map<string, { count: number; date: string }>();
+
+function checkIpLimit(ip: string): boolean {
+  const today = new Date().toDateString();
+  const usage = ipUsage.get(ip);
+  if (!usage || usage.date !== today) {
+    ipUsage.set(ip, { count: 1, date: today });
+    return true;
+  }
+  if (usage.count >= DAILY_LIMIT) return false;
+  usage.count++;
+  return true;
+}
+
+function getClientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") || "unknown";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
