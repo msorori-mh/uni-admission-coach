@@ -175,7 +175,7 @@ const LessonDetail = () => {
     );
   }
 
-  const canAccess = isStaff || hasActiveSubscription || (lesson?.is_free === true) || isFromCache;
+  const canAccess = isStaff || (hasActiveSubscription && planCoversLesson) || (lesson?.is_free === true) || isFromCache;
 
   if (!lesson) {
     return (
