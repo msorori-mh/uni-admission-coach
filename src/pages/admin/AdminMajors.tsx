@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -87,6 +88,7 @@ const AdminMajors = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="universities">
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
@@ -146,6 +148,7 @@ const AdminMajors = () => {
           ))}
         </div>
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Settings } from "lucide-react";
 
@@ -65,6 +66,7 @@ const AdminSubscriptionPlans = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="subscriptions">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Settings className="w-6 h-6" /> إعدادات الاشتراك</h1>
@@ -103,6 +105,7 @@ const AdminSubscriptionPlans = () => {
           </CardContent>
         </Card>
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

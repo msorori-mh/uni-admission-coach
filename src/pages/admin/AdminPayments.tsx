@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, XCircle, Eye, Clock, ImageIcon } from "lucide-react";
 
@@ -134,6 +135,7 @@ const AdminPayments = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="payments">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold">طلبات الدفع</h1>
@@ -205,6 +207,7 @@ const AdminPayments = () => {
           {signedReceiptUrl && <img src={signedReceiptUrl} alt="سند الدفع" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
+      </PermissionGate>
     </AdminLayout>
   );
 };

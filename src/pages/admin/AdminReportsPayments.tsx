@@ -4,6 +4,7 @@ import type { ExportData } from "@/lib/exportReport";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import ReportFilters, { type ReportFilterValues } from "@/components/admin/ReportFilters";
 import { Loader2, DollarSign, CreditCard } from "lucide-react";
 import {
@@ -93,6 +94,7 @@ const AdminReportsPayments = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="reports">
       <div className="space-y-4">
         <div><h1 className="text-2xl font-bold text-foreground">تقارير الدفع والإيرادات</h1><p className="text-sm text-muted-foreground">{filtered.length} طلب دفع • {approved.length} مقبول</p></div>
         {(() => { const ed: ExportData = { title: "تقرير الدفع والإيرادات", summary: { "إجمالي الإيرادات": `${totalRevenue.toLocaleString()} ريال`, "المقبولة": approved.length, "المعلقة": pending, "المرفوضة": rejected }, headers: ["المبلغ", "العملة", "الحالة", "التاريخ"], rows: filtered.map((p) => [p.amount, p.currency, p.status === "approved" ? "مقبول" : p.status === "pending" ? "معلق" : "مرفوض", new Date(p.created_at).toLocaleDateString("ar")]) }; return <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate exportData={ed} exportFilename="تقرير_الدفع" />; })()}
@@ -107,6 +109,7 @@ const AdminReportsPayments = () => {
         {revenueChart.length > 1 && <Card><CardHeader className="pb-2"><CardTitle className="text-base">الإيرادات الشهرية</CardTitle></CardHeader><CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><LineChart data={revenueChart}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} /><YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="amount" name="الإيرادات" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} /></LineChart></ResponsiveContainer></div></CardContent></Card>}
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد بيانات دفع بعد</p>}
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

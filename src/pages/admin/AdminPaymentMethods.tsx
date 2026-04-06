@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Building, ArrowLeftRight, Smartphone } from "lucide-react";
 
@@ -100,6 +101,7 @@ const AdminPaymentMethods = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="payment_methods">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -218,6 +220,7 @@ const AdminPaymentMethods = () => {
           </div>
         </DialogContent>
       </Dialog>
+      </PermissionGate>
     </AdminLayout>
   );
 };

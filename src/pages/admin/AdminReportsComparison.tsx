@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import { Loader2, CalendarIcon, ArrowUpRight, ArrowDownRight, Minus, TrendingUp } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -194,6 +195,7 @@ const AdminReportsComparison = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="reports">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -267,6 +269,7 @@ const AdminReportsComparison = () => {
           </CardContent>
         </Card>
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

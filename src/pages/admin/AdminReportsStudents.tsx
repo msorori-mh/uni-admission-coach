@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModeratorScope } from "@/hooks/useModeratorScope";
 import AdminLayout from "@/components/admin/AdminLayout";
+import PermissionGate from "@/components/admin/PermissionGate";
 import ReportFilters, { type ReportFilterValues } from "@/components/admin/ReportFilters";
 import { Loader2, Users, TrendingUp } from "lucide-react";
 import {
@@ -78,6 +79,7 @@ const AdminReportsStudents = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="reports">
       <div className="space-y-4">
         <div><h1 className="text-2xl font-bold text-foreground">تقارير الطلاب</h1><p className="text-sm text-muted-foreground">{filteredStudents.length} طالب • متوسط المعدل: {avgGpa}%</p></div>
         {(() => { const ed: ExportData = { title: "تقرير الطلاب", summary: { "إجمالي الطلاب": filteredStudents.length, "متوسط المعدل": `${avgGpa}%` }, headers: ["الاسم", "الجامعة", "الكلية", "التخصص", "المحافظة", "المعدل"], rows: filteredStudents.map((s) => [[s.first_name, s.second_name, s.third_name, s.fourth_name].filter(Boolean).join(" ") || "—", universities.find((u) => u.id === s.university_id)?.name_ar || "—", colleges.find((c) => c.id === s.college_id)?.name_ar || "—", majors.find((m) => m.id === s.major_id)?.name_ar || "—", s.governorate || "—", s.gpa ?? "—"]) }; return <ReportFilters filters={filters} onChange={setFilters} universities={universities} showGovernorate showUniversity showDate exportData={ed} exportFilename="تقرير_الطلاب" />; })()}
@@ -93,6 +95,7 @@ const AdminReportsStudents = () => {
         </div>
         {collegeCounts.length > 0 && <Card><CardHeader className="pb-2"><CardTitle className="text-base">أكثر الكليات طلاباً</CardTitle></CardHeader><CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={collegeCounts}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} angle={-30} textAnchor="end" height={70} /><YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} /><Tooltip contentStyle={tooltipStyle} /><Bar dataKey="count" name="عدد الطلاب" fill="#8b5cf6" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent></Card>}
       </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };
