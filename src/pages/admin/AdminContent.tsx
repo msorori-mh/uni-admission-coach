@@ -509,6 +509,9 @@ const AdminContent = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{i + 1}. {q.question_text}</p>
+                      {q.subject && q.subject !== "general" && (
+                        <Badge variant="outline" className="text-[10px] mt-1">{getSubjectLabel(q.subject)}</Badge>
+                      )}
                       <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
                         {["a", "b", "c", "d"].map((opt) => (
                           <span
