@@ -121,6 +121,16 @@ const AdminColleges = () => {
                   <div className="space-y-2"><Label>الرمز *</Label><Input value={code} onChange={(e) => setCode(e.target.value)} dir="ltr" /></div>
                   <div className="space-y-2"><Label>ترتيب العرض</Label><Input type="number" value={displayOrder} onChange={(e) => setDisplayOrder(Number(e.target.value))} /></div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2"><Label>الحد الأدنى للمعدل (%)</Label><Input type="number" value={minGpa} onChange={(e) => setMinGpa(e.target.value)} placeholder="مثال: 85" /></div>
+                  <div className="space-y-2"><Label>نسبة القبول (%)</Label><Input type="number" value={acceptanceRate} onChange={(e) => setAcceptanceRate(e.target.value)} placeholder="مثال: 30" /></div>
+                </div>
+                <div className="space-y-2"><Label>موعد التنسيق</Label><Input value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} placeholder="مثال: سبتمبر 2025" /></div>
+                <div className="space-y-2">
+                  <Label>الوثائق المطلوبة (سطر لكل وثيقة)</Label>
+                  <textarea value={requiredDocs} onChange={(e) => setRequiredDocs(e.target.value)} rows={3} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="شهادة الثانوية&#10;صورة الهوية&#10;صور شخصية" />
+                </div>
+                <div className="space-y-2"><Label>ملاحظات</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
                 <div className="flex items-center gap-2"><Switch checked={isActive} onCheckedChange={setIsActive} /><Label>مفعّلة</Label></div>
                 <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "جاري الحفظ..." : "حفظ"}</Button>
               </div>
