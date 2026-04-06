@@ -39,10 +39,10 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
           </div>
           
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            مفاضلة
+            قَبُول
           </h1>
           <p className="text-lg md:text-xl text-white/85 mb-8 leading-relaxed">
-            منصتك الذكية للتحضير لاختبارات القبول الجامعي
+            قَبُول.. خطوتك الأولى نحو كليات القمة.
           </p>
           
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
