@@ -202,7 +202,7 @@ const AdminPayments = () => {
       <Dialog open={receiptDialog} onOpenChange={setReceiptDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>سند الدفع</DialogTitle></DialogHeader>
-          {selectedRequest?.receipt_url && <img src={selectedRequest.receipt_url} alt="سند الدفع" className="w-full rounded-lg" />}
+          {signedReceiptUrl && <img src={signedReceiptUrl} alt="سند الدفع" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
     </AdminLayout>
