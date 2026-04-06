@@ -208,8 +208,8 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Motivational Banner */}
-        <MotivationalBanner collegeName={collegeName} avgScore={avgScore} />
+        {/* Motivational Banner - only for students */}
+        {!isAdmin && <MotivationalBanner collegeName={collegeName} avgScore={avgScore} />}
 
         {/* Stats Cards */}
         {totalExams > 0 && (
