@@ -178,6 +178,7 @@ const AdminContent = () => {
       major_id: lessonMajorId,
       display_order: lessonOrder,
       is_published: lessonPublished,
+      is_free: lessonFree,
     };
     if (editingLesson) {
       const { error } = await supabase.from("lessons").update(payload).eq("id", editingLesson.id);
