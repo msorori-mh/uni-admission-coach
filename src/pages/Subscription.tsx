@@ -245,6 +245,21 @@ const Subscription = () => {
               </div>
             )}
 
+            {methods.filter((m) => m.type === "ewallet").length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Smartphone className="w-4 h-4" /> محافظ إلكترونية</h3>
+                {methods.filter((m) => m.type === "ewallet").map((m) => (
+                  <Card key={m.id} className="cursor-pointer hover:border-primary transition-colors mb-2" onClick={() => handleSelectMethod(m)}>
+                    <CardContent className="py-3 px-4">
+                      <p className="font-semibold text-sm">{m.name}</p>
+                      {m.account_number && <p className="text-xs text-muted-foreground">رقم المحفظة: {m.account_number}</p>}
+                      {m.details && <p className="text-xs text-muted-foreground">{m.details}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
             {methods.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد طرق دفع متاحة حالياً</p>}
           </div>
         )}
