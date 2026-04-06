@@ -70,6 +70,11 @@ const Dashboard = () => {
         if (exams) setAttempts(exams);
         setLessonCount(lessons?.length ?? 0);
         setCompletedLessons(progress?.length ?? 0);
+        // Fetch college name
+        if (s.college_id) {
+          const { data: college } = await supabase.from("colleges").select("name_ar").eq("id", s.college_id).maybeSingle();
+          if (college) setCollegeName(college.name_ar);
+        }
       }
       if (roles) setIsStaff(roles.some((r) => r.role === "admin" || r.role === "moderator"));
       setUnreadCount((notifs as any)?.count ?? 0);
