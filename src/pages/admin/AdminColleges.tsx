@@ -52,7 +52,9 @@ const AdminColleges = () => {
   const getUniName = (id: string) => universities.find((u) => u.id === id)?.name_ar || "";
 
   const openCreate = () => {
-    setEditing(null); setNameAr(""); setNameEn(""); setCode(""); setUniversityId(filterUni); setIsActive(true); setDisplayOrder(0); setDialogOpen(true);
+    setEditing(null); setNameAr(""); setNameEn(""); setCode(""); setUniversityId(filterUni); setIsActive(true); setDisplayOrder(0);
+    setMinGpa(""); setAcceptanceRate(""); setRequiredDocs(""); setRegistrationDeadline(""); setNotes("");
+    setDialogOpen(true);
   };
 
   const openEdit = (c: Tables<"colleges">) => {
