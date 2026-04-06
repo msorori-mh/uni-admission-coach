@@ -102,6 +102,7 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [remaining, setRemaining] = useState(getRemainingMessages());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,6 +112,14 @@ const ChatWidget = React.forwardRef<HTMLDivElement>((_, ref) => {
   const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    if (getRemainingMessages() <= 0) {
+      toast.error("لقد وصلت للحد اليومي من الرسائل (20 رسالة). حاول مرة أخرى غداً!");
+      return;
+    }
+
+    incrementUsage();
+    setRemaining(getRemainingMessages());
 
     const userMsg: Message = { role: "user", content: text };
     setInput("");
