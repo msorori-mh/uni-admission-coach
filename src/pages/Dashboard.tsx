@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [student, setStudent] = useState<Tables<"students"> | null>(null);
   const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [attempts, setAttempts] = useState<ExamAttemptRow[]>([]);
   const [lessonCount, setLessonCount] = useState(0);
