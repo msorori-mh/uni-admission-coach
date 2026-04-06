@@ -21,6 +21,7 @@ interface Lesson {
   content: string;
   summary: string;
   is_free: boolean;
+  major_id: string;
 }
 
 interface Question {
@@ -39,7 +40,8 @@ const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading, isStaff } = useAuth();
   const navigate = useNavigate();
-  const { isActive: hasActiveSubscription, loading: subLoading } = useSubscription(user?.id);
+  const { isActive: hasActiveSubscription, loading: subLoading, planId } = useSubscription(user?.id);
+  const [planCoversLesson, setPlanCoversLesson] = useState(true);
   const isOffline = useOfflineStatus();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -65,7 +67,7 @@ const LessonDetail = () => {
       if (isOffline) {
         // Load from cache
         if (cached) {
-          setLesson({ id: cached.id, title: cached.title, content: cached.content, summary: cached.summary, is_free: cached.is_free });
+          setLesson({ id: cached.id, title: cached.title, content: cached.content, summary: cached.summary, is_free: cached.is_free, major_id: "" });
           setQuestions(cached.questions as Question[]);
           setIsFromCache(true);
         }
@@ -74,11 +76,24 @@ const LessonDetail = () => {
       }
 
       const [{ data: l }, { data: q }, { data: s }] = await Promise.all([
-        supabase.from("lessons").select("id, title, content, summary, is_free").eq("id", id).maybeSingle(),
+        supabase.from("lessons").select("id, title, content, summary, is_free, major_id").eq("id", id).maybeSingle(),
         supabase.from("questions").select("*").eq("lesson_id", id).order("display_order"),
         supabase.from("students").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
-      if (l) setLesson(l as Lesson);
+      if (l) {
+        setLesson(l as Lesson);
+        // Check if the subscription plan covers this lesson's major
+        if (planId && l.major_id) {
+          const { data: plan } = await supabase
+            .from("subscription_plans")
+            .select("allowed_major_ids")
+            .eq("id", planId)
+            .maybeSingle();
+          if (plan && plan.allowed_major_ids && plan.allowed_major_ids.length > 0) {
+            setPlanCoversLesson(plan.allowed_major_ids.includes(l.major_id));
+          }
+        }
+      }
       if (q) setQuestions(q as Question[]);
       if (s) {
         setStudentId(s.id);
@@ -93,7 +108,7 @@ const LessonDetail = () => {
       setLoading(false);
     };
     fetchData();
-  }, [authLoading, id, user, isOffline]);
+  }, [authLoading, id, user, isOffline, planId]);
 
   const handleSaveOffline = async () => {
     if (!lesson || !id) return;
@@ -160,7 +175,7 @@ const LessonDetail = () => {
     );
   }
 
-  const canAccess = isStaff || hasActiveSubscription || (lesson?.is_free === true) || isFromCache;
+  const canAccess = isStaff || (hasActiveSubscription && planCoversLesson) || (lesson?.is_free === true) || isFromCache;
 
   if (!lesson) {
     return (
@@ -234,7 +249,9 @@ const LessonDetail = () => {
                 <Lock className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
                 <h2 className="text-lg font-bold text-yellow-700 dark:text-yellow-400">المحتوى الكامل مقفل</h2>
                 <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-2">
-                  يمكنك قراءة الملخص مجاناً. لفتح الشرح الكامل والأسئلة والتقييمات، فعّل اشتراكك
+                  {hasActiveSubscription && !planCoversLesson
+                    ? "باقتك الحالية لا تغطي هذا التخصص. يمكنك ترقية اشتراكك للوصول لجميع التخصصات"
+                    : "يمكنك قراءة الملخص مجاناً. لفتح الشرح الكامل والأسئلة والتقييمات، فعّل اشتراكك"}
                 </p>
                 <Button className="mt-4" onClick={() => navigate("/subscription")}>
                   تفعيل الاشتراك
