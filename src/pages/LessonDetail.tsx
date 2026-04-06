@@ -108,7 +108,7 @@ const LessonDetail = () => {
       setLoading(false);
     };
     fetchData();
-  }, [authLoading, id, user, isOffline]);
+  }, [authLoading, id, user, isOffline, planId]);
 
   const handleSaveOffline = async () => {
     if (!lesson || !id) return;
