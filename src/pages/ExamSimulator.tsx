@@ -187,13 +187,8 @@ const ExamSimulator = () => {
     setTotalTimeLeft(TOTAL_TIME);
     setQuestionTimeLeft(PER_QUESTION_TIME);
 
-    const { data } = await supabase.from("exam_attempts").insert({
-      student_id: student.id,
-      major_id: student.major_id,
-      total: picked.length,
-    }).select("id").single();
-
-    if (data) setAttemptId(data.id);
+    // Don't insert attempt yet — wait until exam is finished to prevent score tampering
+    setAttemptId(null);
     setPhase("exam");
   };
 
