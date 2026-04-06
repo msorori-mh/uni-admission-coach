@@ -21,7 +21,7 @@ interface Lesson {
 }
 
 const LessonsList = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin, isModerator } = useAuth();
   const { isActive: hasSubscription, loading: subLoading } = useSubscription(user?.id);
   const navigate = useNavigate();
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -31,6 +31,13 @@ const LessonsList = () => {
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Redirect admin/moderator to admin content page
+  useEffect(() => {
+    if (!authLoading && (isAdmin || isModerator)) {
+      navigate("/admin/content", { replace: true });
+    }
+  }, [authLoading, isAdmin, isModerator, navigate]);
 
   useEffect(() => {
     if (authLoading || !user) return;

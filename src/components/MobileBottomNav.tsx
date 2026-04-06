@@ -14,6 +14,7 @@ const studentNavItems = [
 
 const adminNavItems = [
   { path: "/dashboard", icon: Home, label: "الرئيسية" },
+  { path: "/admin/content", icon: BookOpen, label: "المحتوى" },
   { path: "/admin", icon: Shield, label: "الإدارة" },
   { path: "/notifications", icon: Bell, label: "الإشعارات" },
 ];
