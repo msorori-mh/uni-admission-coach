@@ -21,6 +21,7 @@ interface Lesson {
   content: string;
   summary: string;
   is_free: boolean;
+  major_id: string;
 }
 
 interface Question {
