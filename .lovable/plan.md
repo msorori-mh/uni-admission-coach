@@ -1,72 +1,40 @@
 
+## خطة: إضافة حماية الصلاحيات على مستوى الصفحات
 
-## خطة: نظام صلاحيات تفصيلية للمشرفين
-
-### المشكلة الحالية
-المشرف حالياً لديه **نطاق** (جامعة/كلية/تخصص) فقط، لكن جميع المشرفين يرون نفس الصفحات ولديهم نفس الإمكانيات. لا توجد طريقة لتقييد مشرف بإدارة المحتوى فقط أو الدفع فقط.
+### المشكلة
+حالياً القائمة الجانبية تخفي العناصر بحسب الصلاحيات، لكن المشرف يمكنه الوصول لأي صفحة عبر كتابة الرابط مباشرة في المتصفح (مثلاً `/admin/payments`).
 
 ### الحل
-إضافة جدول `moderator_permissions` يحدد **ما يمكن للمشرف فعله** (بجانب النطاق الموجود الذي يحدد **أين**).
-
-### الصلاحيات المقترحة
-
-| الصلاحية | الوصف |
-|-----------|--------|
-| `content` | إدارة المحتوى التعليمي (دروس، أسئلة) |
-| `students` | عرض وإدارة بيانات الطلاب |
-| `payments` | إدارة طلبات الدفع (مراجعة، قبول، رفض) |
-| `payment_methods` | إدارة طرق الدفع |
-| `subscriptions` | إدارة إعدادات الاشتراك |
-| `reports` | الوصول إلى التقارير |
-| `universities` | إدارة الجامعات والكليات والتخصصات |
-
-**ملاحظة:** الأدمن لديه كل الصلاحيات تلقائياً دون الحاجة لإدخالها.
+إضافة تحقق من الصلاحية في كل صفحة أدمن فرعية. إذا لم يكن للمشرف الصلاحية المطلوبة، يتم إعادة توجيهه إلى `/admin` مع رسالة تنبيه.
 
 ### خطوات التنفيذ
 
-#### 1. إنشاء جدول `moderator_permissions` (Migration)
-```sql
-CREATE TABLE public.moderator_permissions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  permission text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, permission)
-);
-ALTER TABLE public.moderator_permissions ENABLE ROW LEVEL SECURITY;
--- سياسات: الأدمن يدير، المشرف يرى صلاحياته فقط
-```
+#### 1. إنشاء مكوّن `PermissionGate`
+مكوّن مشترك يتحقق من الصلاحية ويعيد التوجيه إذا لم تكن موجودة:
+- يستقبل `permission` المطلوبة
+- يستخدم `useModeratorPermissions` للتحقق
+- يعرض رسالة "غير مصرح" ويعيد التوجيه إلى `/admin`
 
-#### 2. إنشاء دالة `has_permission` (Migration)
-دالة `SECURITY DEFINER` للتحقق من الصلاحيات بأمان:
-```sql
-CREATE FUNCTION public.has_permission(_user_id uuid, _permission text)
-RETURNS boolean ...
--- تُرجع true إذا كان المستخدم admin أو لديه الصلاحية المحددة
-```
+#### 2. تحديث الصفحات الفرعية
+إضافة `PermissionGate` داخل كل صفحة:
 
-#### 3. تحديث صفحة إدارة المستخدمين (`AdminUsers.tsx`)
-- إضافة قسم "الصلاحيات" بجانب قسم "النطاق" الموجود للمشرفين
-- عرض الصلاحيات الحالية كـ badges مع إمكانية الإضافة والحذف
-- Checkbox list لاختيار الصلاحيات عند إضافتها
+| الصفحة | الصلاحية المطلوبة |
+|--------|-------------------|
+| AdminUniversities, AdminColleges, AdminMajors | `universities` |
+| AdminStudents | `students` |
+| AdminContent | `content` |
+| AdminPayments | `payments` |
+| AdminPaymentMethods | `payment_methods` |
+| AdminSubscriptionPlans | `subscriptions` |
+| جميع صفحات التقارير | `reports` |
 
-#### 4. إنشاء hook جديد `useModeratorPermissions`
-- يجلب صلاحيات المستخدم الحالي
-- يوفر دالة `hasPermission(permission)` للتحقق السريع
-- الأدمن يُرجع `true` دائماً
-
-#### 5. تحديث `AdminLayout.tsx`
-- إخفاء عناصر القائمة الجانبية التي لا يملك المشرف صلاحية الوصول إليها
-- مثال: مشرف بصلاحية `content` فقط يرى "المحتوى" فقط في القائمة
-
-#### 6. تحديث صفحات الأدمن الفرعية
-- كل صفحة تتحقق من الصلاحية المناسبة عند التحميل
-- إعادة التوجيه إلى `/admin` إذا لم يكن لديه الصلاحية
+**ملاحظة:** AdminDashboard لا تحتاج صلاحية خاصة (متاحة لجميع المشرفين). AdminUsers تبقى `useAuth("admin")` فقط.
 
 ### الملفات المتأثرة
-- **جديد:** `src/hooks/useModeratorPermissions.ts`
-- **تعديل:** `src/pages/admin/AdminUsers.tsx` - إضافة إدارة الصلاحيات
-- **تعديل:** `src/components/admin/AdminLayout.tsx` - إخفاء العناصر بحسب الصلاحيات
-- **تعديل:** صفحات الأدمن الفرعية - التحقق من الصلاحية
-- **Migration:** إنشاء الجدول والدالة
+- **جديد:** `src/components/admin/PermissionGate.tsx`
+- **تعديل:** 12 صفحة أدمن فرعية - إضافة غلاف `PermissionGate`
 
+### التفاصيل التقنية
+- المكوّن يلتف حول محتوى الصفحة داخل `AdminLayout`
+- الأدمن يتجاوز جميع التحققات تلقائياً (عبر `useModeratorPermissions`)
+- يستخدم `useNavigate` + `toast` لإعلام المشرف وإعادة توجيهه
