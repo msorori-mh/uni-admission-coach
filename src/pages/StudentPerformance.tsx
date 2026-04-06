@@ -324,7 +324,7 @@ const StudentPerformance = () => {
             <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="trend" className="text-xs">تطور النتائج</TabsTrigger>
               <TabsTrigger value="distribution" className="text-xs">التوزيع</TabsTrigger>
-              <TabsTrigger value="coverage" className="text-xs">التغطية</TabsTrigger>
+              <TabsTrigger value="coverage" className="text-xs">المواد</TabsTrigger>
             </TabsList>
 
             {/* Score Trend */}
