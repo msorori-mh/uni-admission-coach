@@ -18,6 +18,7 @@ interface Lesson {
   title: string;
   content: string;
   summary: string;
+  is_free: boolean;
 }
 
 interface Question {
