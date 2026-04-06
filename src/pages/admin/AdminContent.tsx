@@ -161,6 +161,7 @@ const AdminContent = () => {
     setLessonMajorId(l.major_id);
     setLessonOrder(l.display_order);
     setLessonPublished(l.is_published);
+    setLessonFree(l.is_free);
     setLessonDialogOpen(true);
   };
 
