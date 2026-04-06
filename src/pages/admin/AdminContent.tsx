@@ -65,6 +65,7 @@ const AdminContent = () => {
   const [lessonMajorId, setLessonMajorId] = useState("");
   const [lessonOrder, setLessonOrder] = useState(0);
   const [lessonPublished, setLessonPublished] = useState(false);
+  const [lessonFree, setLessonFree] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Question dialog
