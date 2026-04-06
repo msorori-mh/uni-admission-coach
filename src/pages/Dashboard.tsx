@@ -172,6 +172,7 @@ const Dashboard = () => {
     { path: "/exam-history", title: "سجل الاختبارات", desc: "عرض محاولاتك السابقة", icon: Trophy, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
     { path: "/performance", title: "تحليل الأداء", desc: "مقارنة بالزملاء ونقاط القوة والضعف", icon: BarChart3, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
     { path: "/leaderboard", title: "لوحة المتصدرين", desc: "ترتيب الأوائل على مستوى الجمهورية", icon: Trophy, color: "border-r-secondary", iconColor: "text-secondary", bgColor: "bg-secondary/10" },
+    { path: "/college-guide", title: "دليل الكليات", desc: "متطلبات القبول ونسب القبول والمواعيد", icon: Building2, color: "border-r-primary", iconColor: "text-primary", bgColor: "bg-primary/10" },
     { path: "/notifications", title: "الإشعارات", desc: "آخر التحديثات", icon: Bell, color: "border-r-accent", iconColor: "text-accent", bgColor: "bg-accent/10", badge: unreadCount },
   ];
 
