@@ -76,11 +76,24 @@ const LessonDetail = () => {
       }
 
       const [{ data: l }, { data: q }, { data: s }] = await Promise.all([
-        supabase.from("lessons").select("id, title, content, summary, is_free").eq("id", id).maybeSingle(),
+        supabase.from("lessons").select("id, title, content, summary, is_free, major_id").eq("id", id).maybeSingle(),
         supabase.from("questions").select("*").eq("lesson_id", id).order("display_order"),
         supabase.from("students").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
-      if (l) setLesson(l as Lesson);
+      if (l) {
+        setLesson(l as Lesson);
+        // Check if the subscription plan covers this lesson's major
+        if (planId && l.major_id) {
+          const { data: plan } = await supabase
+            .from("subscription_plans")
+            .select("allowed_major_ids")
+            .eq("id", planId)
+            .maybeSingle();
+          if (plan && plan.allowed_major_ids && plan.allowed_major_ids.length > 0) {
+            setPlanCoversLesson(plan.allowed_major_ids.includes(l.major_id));
+          }
+        }
+      }
       if (q) setQuestions(q as Question[]);
       if (s) {
         setStudentId(s.id);
