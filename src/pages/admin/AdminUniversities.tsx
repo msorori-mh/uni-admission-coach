@@ -92,6 +92,7 @@ const AdminUniversities = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="universities">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
