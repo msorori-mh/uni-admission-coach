@@ -109,9 +109,11 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  const userName = student
-    ? `${student.first_name || ""} ${student.fourth_name || ""}`.trim() || "طالب"
-    : user?.user_metadata?.first_name || "طالب";
+  const userName = isAdmin
+    ? "مدير النظام"
+    : student
+      ? `${student.first_name || ""} ${student.fourth_name || ""}`.trim() || "طالب"
+      : user?.user_metadata?.first_name || "طالب";
 
   // Stats calculations
   const totalExams = attempts.length;
