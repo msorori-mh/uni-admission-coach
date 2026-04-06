@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, CreditCard, Upload, CheckCircle, Clock,
-  Building, ArrowLeftRight, ChevronRight, GraduationCap
+  Building, ArrowLeftRight, ChevronRight, GraduationCap, Smartphone
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
