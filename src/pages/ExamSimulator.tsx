@@ -33,6 +33,7 @@ interface Question {
   option_d: string;
   correct_option: string;
   explanation: string;
+  subject?: string;
 }
 
 interface ExamAttempt {
