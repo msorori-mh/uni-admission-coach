@@ -70,8 +70,27 @@ const AdminPayments = () => {
     }
   };
 
-  const handleReview = (req: PaymentRequest) => { setSelectedRequest(req); setAdminNotes(req.admin_notes || ""); setReviewDialog(true); };
-  const handleViewReceipt = (req: PaymentRequest) => { setSelectedRequest(req); setReceiptDialog(true); };
+  const handleReview = async (req: PaymentRequest) => {
+    setSelectedRequest(req);
+    setAdminNotes(req.admin_notes || "");
+    if (req.receipt_url) {
+      const { data } = await supabase.storage.from("receipts").createSignedUrl(req.receipt_url, 3600);
+      setSignedReceiptUrl(data?.signedUrl || null);
+    } else {
+      setSignedReceiptUrl(null);
+    }
+    setReviewDialog(true);
+  };
+  const handleViewReceipt = async (req: PaymentRequest) => {
+    setSelectedRequest(req);
+    if (req.receipt_url) {
+      const { data } = await supabase.storage.from("receipts").createSignedUrl(req.receipt_url, 3600);
+      setSignedReceiptUrl(data?.signedUrl || null);
+    } else {
+      setSignedReceiptUrl(null);
+    }
+    setReceiptDialog(true);
+  };
 
   const handleApprove = async () => {
     if (!selectedRequest || !user) return;
