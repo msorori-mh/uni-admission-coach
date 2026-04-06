@@ -23,6 +23,7 @@ interface Lesson {
   summary: string;
   display_order: number;
   is_published: boolean;
+  is_free: boolean;
   created_at: string;
 }
 
