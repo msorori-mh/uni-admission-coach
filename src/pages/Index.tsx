@@ -93,7 +93,7 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
       {/* Footer */}
       <footer className="bg-card border-t py-6 px-4 text-center">
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} مفاضلة - جميع الحقوق محفوظة
+          © {new Date().getFullYear()} قَبُول | Qubool - جميع الحقوق محفوظة
         </p>
       </footer>
     </div>
