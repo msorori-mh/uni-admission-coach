@@ -96,6 +96,7 @@ const AdminPaymentMethods = () => {
 
   const banks = methods.filter((m) => m.type === "bank");
   const exchanges = methods.filter((m) => m.type === "exchange");
+  const ewallets = methods.filter((m) => m.type === "ewallet");
 
   return (
     <AdminLayout>
