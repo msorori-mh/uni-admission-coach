@@ -5,25 +5,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, Building2, BookOpen, Users, UserCog,
-  LogOut, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, FileText,
+  LogOut, ChevronDown, ChevronUp, BarChart3, FileText,
   CreditCard, Wallet, ListChecks, DollarSign, ClipboardCheck, ArrowRight, ArrowLeft,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import { useModeratorPermissions, type ModeratorPermission } from "@/hooks/useModeratorPermissions";
 
-const mainNavItems = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  permission?: ModeratorPermission | "admin_only";
+}
+
+const mainNavItems: NavItem[] = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
-  { path: "/admin/universities", label: "الجامعات", icon: Building2 },
-  { path: "/admin/colleges", label: "الكليات", icon: Building2 },
-  { path: "/admin/majors", label: "التخصصات", icon: BookOpen },
-  { path: "/admin/students", label: "الطلاب", icon: Users },
-  { path: "/admin/content", label: "المحتوى", icon: FileText },
-  { path: "/admin/users", label: "المستخدمون", icon: UserCog },
-  { path: "/admin/subscription-plans", label: "إعدادات الاشتراك", icon: ListChecks },
-  { path: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet },
-  { path: "/admin/payments", label: "طلبات الدفع", icon: CreditCard },
+  { path: "/admin/universities", label: "الجامعات", icon: Building2, permission: "universities" },
+  { path: "/admin/colleges", label: "الكليات", icon: Building2, permission: "universities" },
+  { path: "/admin/majors", label: "التخصصات", icon: BookOpen, permission: "universities" },
+  { path: "/admin/students", label: "الطلاب", icon: Users, permission: "students" },
+  { path: "/admin/content", label: "المحتوى", icon: FileText, permission: "content" },
+  { path: "/admin/users", label: "المستخدمون", icon: UserCog, permission: "admin_only" },
+  { path: "/admin/subscription-plans", label: "إعدادات الاشتراك", icon: ListChecks, permission: "subscriptions" },
+  { path: "/admin/payment-methods", label: "طرق الدفع", icon: Wallet, permission: "payment_methods" },
+  { path: "/admin/payments", label: "طلبات الدفع", icon: CreditCard, permission: "payments" },
 ];
 
-const reportSubItems = [
+const reportSubItems: NavItem[] = [
   { path: "/admin/reports/students", label: "الطلاب", icon: Users },
   { path: "/admin/reports/payments", label: "الدفع والإيرادات", icon: DollarSign },
   { path: "/admin/reports/subscriptions", label: "الاشتراكات", icon: ListChecks },
@@ -34,6 +43,8 @@ const reportSubItems = [
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+  const { hasPermission } = useModeratorPermissions(user?.id, isAdmin);
   const isReportsRoute = location.pathname.startsWith("/admin/reports");
   const [reportsOpen, setReportsOpen] = useState(isReportsRoute);
 
@@ -42,7 +53,18 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     navigate("/");
   };
 
-  const renderNavLink = (item: { path: string; label: string; icon: any }) => {
+  const canSeeItem = (item: NavItem): boolean => {
+    if (!item.permission) return true;
+    if (item.permission === "admin_only") return isAdmin;
+    return hasPermission(item.permission);
+  };
+
+  const canSeeReports = isAdmin || hasPermission("reports");
+
+  const visibleMainItems = mainNavItems.filter(canSeeItem);
+  const visibleReportItems = canSeeReports ? reportSubItems : [];
+
+  const renderNavLink = (item: NavItem) => {
     const isActive = location.pathname === item.path;
     return (
       <Link
@@ -75,40 +97,44 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {mainNavItems.map(renderNavLink)}
+          {visibleMainItems.map(renderNavLink)}
 
           {/* Reports collapsible */}
-          <button
-            onClick={() => setReportsOpen(!reportsOpen)}
-            className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-              isReportsRoute ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              التقارير
-            </div>
-            {reportsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+          {canSeeReports && (
+            <>
+              <button
+                onClick={() => setReportsOpen(!reportsOpen)}
+                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isReportsRoute ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  التقارير
+                </div>
+                {reportsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
 
-          {reportsOpen && (
-            <div className="mr-4 space-y-0.5 border-r-2 border-border pr-2">
-              {reportSubItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                      isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    <item.icon className="w-3.5 h-3.5" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
+              {reportsOpen && (
+                <div className="mr-4 space-y-0.5 border-r-2 border-border pr-2">
+                  {visibleReportItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                          isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <item.icon className="w-3.5 h-3.5" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </nav>
 
@@ -144,7 +170,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Mobile nav */}
         <div className="md:hidden overflow-x-auto border-b bg-card">
           <div className="flex px-2 py-2 gap-1 min-w-max">
-            {mainNavItems.map((item) => {
+            {visibleMainItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
@@ -152,7 +178,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 </Link>
               );
             })}
-            {reportSubItems.map((item) => {
+            {visibleReportItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
