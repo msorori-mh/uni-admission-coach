@@ -10,7 +10,7 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
     {
       icon: BookOpen,
       title: "محتوى تعليمي شامل",
-      description: "ملخصات ودروس مُعدّة بعناية لجميع مواد اختبار المفاضلة",
+      description: "ملخصات ودروس مُعدّة بعناية لجميع مواد اختبار القبول",
     },
     {
       icon: ClipboardCheck,
