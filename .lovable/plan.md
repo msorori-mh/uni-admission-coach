@@ -1,54 +1,90 @@
 
 
-## خطة: حفظ الدروس للقراءة بدون إنترنت
+## خطة: نظام خطط اشتراك متعددة + أكواد الخصم + فترة التجربة
 
-### الفكرة
-إضافة زر "حفظ للقراءة أوفلاين" في صفحة الدرس، يحفظ محتوى الدرس (الشرح + الملخص + الأسئلة) في IndexedDB على جهاز الطالب. عند فقدان الاتصال، يتم عرض المحتوى المحفوظ تلقائياً.
+### الوضع الحالي
+النظام يدعم خطة اشتراك واحدة فقط بسعر ثابت (حسب المنطقة). جدول `subscription_settings` يحتوي سعر واحد + عملة + وصف.
 
-### التصميم
+### التغييرات المطلوبة
 
-**في صفحة الدرس (`LessonDetail`):**
-- زر تحميل ⬇️ بجانب عنوان الدرس → يحفظ المحتوى في IndexedDB
-- إذا كان الدرس محفوظاً مسبقاً، يظهر شارة "متاح أوفلاين" مع زر حذف
-- عند فقدان الاتصال: يتم تحميل الدرس من IndexedDB تلقائياً بدلاً من Supabase
+#### 1. جدول `subscription_plans` (جديد - Migration)
+```sql
+CREATE TABLE public.subscription_plans (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,              -- "طبيب المستقبل"
+  slug text NOT NULL UNIQUE,       -- "medical", "engineering", "vip", "free"
+  description text DEFAULT '',
+  features text[] DEFAULT '{}',    -- مصفوفة الميزات المعروضة
+  price_zone_a numeric NOT NULL DEFAULT 0,
+  price_zone_b numeric NOT NULL DEFAULT 0,
+  price_default numeric NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'YER',
+  is_active boolean NOT NULL DEFAULT true,
+  display_order integer NOT NULL DEFAULT 0,
+  -- أي تخصصات يفتحها هذا الاشتراك (null = الكل مثل VIP)
+  allowed_major_ids uuid[] DEFAULT NULL,
+  is_free boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+```
 
-**في صفحة قائمة الدروس (`LessonsList`):**
-- أيقونة صغيرة بجانب كل درس محفوظ أوفلاين
-- عند فقدان الاتصال: عرض الدروس المحفوظة فقط مع رسالة توضيحية
+#### 2. جدول `promo_codes` (جديد - Migration)
+```sql
+CREATE TABLE public.promo_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
+  discount_percent integer NOT NULL DEFAULT 0,  -- 10 = 10%
+  max_uses integer DEFAULT NULL,                -- null = غير محدود
+  used_count integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  expires_at timestamptz DEFAULT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+```
 
-**صفحة إدارة المحتوى المحفوظ (اختياري):**
-- في الداشبورد أو الإعدادات: عرض قائمة الدروس المحفوظة مع حجم التخزين وإمكانية الحذف
+#### 3. تحديث جدول `subscriptions`
+```sql
+ALTER TABLE public.subscriptions 
+  ADD COLUMN plan_id uuid REFERENCES subscription_plans(id),
+  ADD COLUMN trial_ends_at timestamptz DEFAULT NULL;
+```
 
-### خطوات التنفيذ
+#### 4. إضافة عمود `promo_code_id` لـ `payment_requests`
+```sql
+ALTER TABLE public.payment_requests
+  ADD COLUMN promo_code_id uuid REFERENCES promo_codes(id);
+```
 
-#### 1. إنشاء `src/lib/offlineStorage.ts`
-- استخدام IndexedDB (عبر مكتبة `idb` خفيفة أو API مباشر)
-- دوال: `saveLesson()`, `getLesson()`, `removeLesson()`, `getAllSavedLessons()`, `isLessonSaved()`
-- تخزين: `id`, `title`, `content`, `summary`, `questions[]`, `savedAt`
+#### 5. دالة التجربة المجانية (24 ساعة)
+Trigger عند تسجيل طالب جديد → إنشاء اشتراك تجريبي تلقائياً بمدة 24 ساعة (status = 'trial').
 
-#### 2. إنشاء `src/hooks/useOfflineLesson.ts`
-- يتحقق من حالة الاتصال (`navigator.onLine` + event listeners)
-- يحاول جلب الدرس من Supabase أولاً، وإذا فشل يجلبه من IndexedDB
-- يوفر `isOffline`, `isSaved`, `saveForOffline()`, `removeOffline()`
-
-#### 3. تحديث `LessonDetail.tsx`
-- إضافة زر حفظ/حذف أوفلاين في الهيدر
-- استخدام `useOfflineLesson` لجلب المحتوى (أونلاين أو أوفلاين)
-- عند الأوفلاين: إخفاء تبويب "التقييمات" (يحتاج اتصال)
-
-#### 4. تحديث `LessonsList.tsx`
-- عرض أيقونة 📥 بجانب الدروس المحفوظة
-- عند فقدان الاتصال: عرض الدروس المحفوظة فقط مع بانر "أنت في وضع أوفلاين"
+تحديث `has_active_subscription` ليشمل حالة trial.
 
 ### الملفات المتأثرة
-- **جديد:** `src/lib/offlineStorage.ts` - IndexedDB wrapper
-- **جديد:** `src/hooks/useOfflineLesson.ts` - Hook للتحكم بالأوفلاين
-- **تعديل:** `src/pages/LessonDetail.tsx` - زر الحفظ + الجلب من الكاش
-- **تعديل:** `src/pages/LessonsList.tsx` - مؤشر الدروس المحفوظة + وضع أوفلاين
+
+#### صفحات جديدة/معدلة:
+- **`AdminSubscriptionPlans.tsx`** — تحويل من إعدادات واحدة إلى CRUD لخطط متعددة + إدارة أكواد الخصم
+- **`Subscription.tsx`** — عرض البطاقات (مجاني / طبي / هندسة / VIP) بدلاً من سعر واحد + حقل إدخال كود الخصم
+- **`useSubscription.ts`** — إرجاع `planId` و `planSlug` + التحقق من trial
+
+#### تحديث منطق الوصول:
+- **`LessonDetail.tsx`** + **`LessonsList.tsx`** — التحقق من أن خطة الاشتراك تغطي تخصص الدرس (أو VIP)
+- **دالة `has_active_subscription` في SQL** — تحديث لتشمل trial + التحقق من الخطة
+
+### تفاصيل واجهة المستخدم
+
+**صفحة الاشتراك (الطالب):**
+- عرض 3-4 بطاقات أفقية (مجاني / طبي / هندسة / VIP) مع قائمة الميزات وسعر كل خطة
+- حقل "كود الخصم" يظهر عند اختيار خطة → يطبق الخصم على السعر
+- باقي التدفق كما هو (اختيار طريقة الدفع → رفع السند)
+- شارة "تجربة مجانية" في الأعلى إذا كان الطالب في فترة التجربة
+
+**صفحة الأدمن:**
+- جدول لعرض الخطط مع إمكانية إضافة/تعديل/تعطيل
+- تبويب ثاني لأكواد الخصم مع إنشاء/تعطيل + عرض عدد الاستخدامات
 
 ### ملاحظات
-- لا يحتاج تثبيت مكتبات خارجية — IndexedDB API مدعوم في جميع المتصفحات الحديثة
-- لا يحتاج تغييرات في قاعدة البيانات
-- الأسئلة تُحفظ مع الدرس للتدريب أوفلاين
-- التقييمات والإنجاز لا تعمل أوفلاين (تحتاج اتصال)
+- الخطة المجانية (is_free=true) لا تحتاج دفع — الطالب يشترك فيها مباشرة
+- `allowed_major_ids` تحدد أي تخصصات يفتحها الاشتراك. NULL = جميع التخصصات (VIP)
+- فترة التجربة 24 ساعة تُمنح تلقائياً عند أول تسجيل فقط
 
