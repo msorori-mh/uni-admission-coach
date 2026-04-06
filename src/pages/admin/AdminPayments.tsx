@@ -135,6 +135,7 @@ const AdminPayments = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="payments">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold">طلبات الدفع</h1>

@@ -154,7 +154,7 @@ const AdminUniversities = () => {
             </Card>
           ))}
         </div>
-      </div>
+      </PermissionGate>
     </AdminLayout>
   );
 };

@@ -88,6 +88,7 @@ const AdminMajors = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="universities">
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

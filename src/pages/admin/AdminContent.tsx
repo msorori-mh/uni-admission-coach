@@ -392,6 +392,7 @@ const AdminContent = () => {
 
   return (
     <AdminLayout>
+      <PermissionGate permission="content">
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
