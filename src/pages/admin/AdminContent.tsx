@@ -149,6 +149,7 @@ const AdminContent = () => {
     setLessonMajorId(filterMajor);
     setLessonOrder(filteredLessons.length);
     setLessonPublished(false);
+    setLessonFree(false);
     setLessonDialogOpen(true);
   };
 
