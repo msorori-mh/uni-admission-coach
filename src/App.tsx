@@ -38,8 +38,14 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import NotFound from "./pages/NotFound";
 import MobileBottomNav from "./components/MobileBottomNav";
 import ChatWidget from "./components/ChatWidget";
+import { useOfflineExamSync } from "./hooks/useOfflineExamSync";
 
 const queryClient = new QueryClient();
+
+function OfflineExamSyncProvider({ children }: { children: React.ReactNode }) {
+  useOfflineExamSync();
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -48,43 +54,45 @@ function App() {
         <Toaster />
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<StudentProfile />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/lessons" element={<LessonsList />} />
-            <Route path="/lessons/:id" element={<LessonDetail />} />
-            <Route path="/exam" element={<ExamSimulator />} />
-            <Route path="/exam-history" element={<ExamHistory />} />
-            <Route path="/performance" element={<StudentPerformance />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/search" element={<SearchContent />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/universities" element={<AdminUniversities />} />
-            <Route path="/admin/colleges" element={<AdminColleges />} />
-            <Route path="/admin/majors" element={<AdminMajors />} />
-            <Route path="/admin/students" element={<AdminStudents />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/reports/students" element={<AdminReportsStudents />} />
-            <Route path="/admin/reports/payments" element={<AdminReportsPayments />} />
-            <Route path="/admin/reports/subscriptions" element={<AdminReportsSubscriptions />} />
-            <Route path="/admin/reports/exams" element={<AdminReportsExams />} />
-            <Route path="/admin/reports/comparison" element={<AdminReportsComparison />} />
-            <Route path="/admin/content" element={<AdminContent />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlans />} />
-            <Route path="/admin/payment-methods" element={<AdminPaymentMethods />} />
-            <Route path="/admin/payments" element={<AdminPayments />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <MobileBottomNav />
-          <ChatWidget />
+          <OfflineExamSyncProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<StudentProfile />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/lessons" element={<LessonsList />} />
+              <Route path="/lessons/:id" element={<LessonDetail />} />
+              <Route path="/exam" element={<ExamSimulator />} />
+              <Route path="/exam-history" element={<ExamHistory />} />
+              <Route path="/performance" element={<StudentPerformance />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="/search" element={<SearchContent />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/achievements" element={<Achievements />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/universities" element={<AdminUniversities />} />
+              <Route path="/admin/colleges" element={<AdminColleges />} />
+              <Route path="/admin/majors" element={<AdminMajors />} />
+              <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/reports/students" element={<AdminReportsStudents />} />
+              <Route path="/admin/reports/payments" element={<AdminReportsPayments />} />
+              <Route path="/admin/reports/subscriptions" element={<AdminReportsSubscriptions />} />
+              <Route path="/admin/reports/exams" element={<AdminReportsExams />} />
+              <Route path="/admin/reports/comparison" element={<AdminReportsComparison />} />
+              <Route path="/admin/content" element={<AdminContent />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/subscription-plans" element={<AdminSubscriptionPlans />} />
+              <Route path="/admin/payment-methods" element={<AdminPaymentMethods />} />
+              <Route path="/admin/payments" element={<AdminPayments />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <MobileBottomNav />
+            <ChatWidget />
+          </OfflineExamSyncProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

@@ -7,15 +7,21 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
+import {
+  saveExamQuestions, getExamQuestions, savePendingExamResult,
+  getPendingExamResults, type OfflineQuestion,
+} from "@/lib/offlineStorage";
 import {
   GraduationCap, ChevronLeft, Clock, AlertTriangle, CheckCircle2,
-  XCircle, Loader2, Play, Trophy, RotateCcw
+  XCircle, Loader2, Play, Trophy, RotateCcw, Download, WifiOff, CloudUpload
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
 
 const MAX_QUESTIONS = 45;
-const TOTAL_TIME = 90 * 60; // 90 min in seconds
-const PER_QUESTION_TIME = 2 * 60; // 2 min in seconds
+const TOTAL_TIME = 90 * 60;
+const PER_QUESTION_TIME = 2 * 60;
 const MAX_ATTEMPTS = 3;
 
 interface Question {
@@ -44,12 +50,21 @@ const ExamSimulator = () => {
   const { user, loading: authLoading, isStaff } = useAuth();
   const navigate = useNavigate();
   const { isActive: hasActiveSubscription, loading: subLoading } = useSubscription(user?.id);
+  const isOffline = useOfflineStatus();
+  const { toast } = useToast();
 
   const [student, setStudent] = useState<any>(null);
   const [majorName, setMajorName] = useState("");
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [pastAttempts, setPastAttempts] = useState<ExamAttempt[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Offline state
+  const [hasOfflineQuestions, setHasOfflineQuestions] = useState(false);
+  const [offlineQuestionCount, setOfflineQuestionCount] = useState(0);
+  const [downloadingOffline, setDownloadingOffline] = useState(false);
+  const [pendingResultsCount, setPendingResultsCount] = useState(0);
+  const [isOfflineExam, setIsOfflineExam] = useState(false);
 
   // Exam state
   const [phase, setPhase] = useState<Phase>("intro");
@@ -67,10 +82,29 @@ const ExamSimulator = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const questionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Check offline questions & pending results
+  useEffect(() => {
+    const checkOffline = async () => {
+      try {
+        const pending = await getPendingExamResults();
+        setPendingResultsCount(pending.length);
+      } catch {}
+    };
+    checkOffline();
+  }, [phase]);
+
   // Fetch data
   useEffect(() => {
     if (authLoading || !user) return;
-    const fetch = async () => {
+    const fetchData = async () => {
+      // Try to get student from server or use cached info
+      if (isOffline) {
+        // In offline mode, we can't fetch student data - but we might have cached questions
+        // We need at least a majorId stored somewhere. For now, try to load any cached questions.
+        setLoading(false);
+        return;
+      }
+
       const { data: s } = await supabase.from("students").select("*").eq("user_id", user.id).maybeSingle();
       if (!s?.major_id) { setLoading(false); return; }
       setStudent(s);
@@ -85,7 +119,6 @@ const ExamSimulator = () => {
       if (major) setMajorName(major.name_ar);
       if (attempts) setPastAttempts(attempts as ExamAttempt[]);
 
-      // Filter questions belonging to published lessons of student's major
       if (qs) {
         const { data: lessons } = await supabase.from("lessons")
           .select("id").eq("major_id", s.major_id).eq("is_published", true);
@@ -93,10 +126,20 @@ const ExamSimulator = () => {
         const filtered = (qs as any[]).filter((q) => lessonIds.has(q.lesson_id));
         setAllQuestions(filtered as Question[]);
       }
+
+      // Check if we have offline questions for this major
+      try {
+        const cached = await getExamQuestions(s.major_id);
+        if (cached && cached.length > 0) {
+          setHasOfflineQuestions(true);
+          setOfflineQuestionCount(cached.length);
+        }
+      } catch {}
+
       setLoading(false);
     };
-    fetch();
-  }, [authLoading, user]);
+    fetchData();
+  }, [authLoading, user, isOffline]);
 
   // Cleanup timers
   useEffect(() => {
@@ -106,7 +149,7 @@ const ExamSimulator = () => {
     };
   }, []);
 
-  const shuffleAndPick = (arr: Question[], count: number): Question[] => {
+  const shuffleAndPick = (arr: Question[] | OfflineQuestion[], count: number) => {
     const shuffled = [...arr].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
   };
@@ -115,7 +158,35 @@ const ExamSimulator = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
-    // Submit answers to server-side edge function for secure score calculation
+    if (isOffline || isOfflineExam) {
+      // Calculate score locally
+      const clientScore = questions.filter((q) => finalAnswers[q.id] === q.correct_option).length;
+      setResultScore(clientScore);
+      setResultTotal(questions.length);
+
+      // Save as pending result
+      if (student) {
+        try {
+          await savePendingExamResult({
+            id: crypto.randomUUID(),
+            studentId: student.id,
+            majorId: student.major_id,
+            answers: finalAnswers,
+            score: clientScore,
+            total: questions.length,
+            startedAt: new Date(Date.now() - TOTAL_TIME * 1000).toISOString(),
+            completedAt: new Date().toISOString(),
+          });
+          const pending = await getPendingExamResults();
+          setPendingResultsCount(pending.length);
+        } catch {}
+      }
+
+      setPhase("result");
+      return;
+    }
+
+    // Online submission
     if (student) {
       const { data, error } = await supabase.functions.invoke("submit-exam", {
         body: { answers: finalAnswers },
@@ -123,7 +194,6 @@ const ExamSimulator = () => {
 
       if (error || !data?.success) {
         console.error("Exam submission failed:", error || data?.error);
-        // Fallback: show client-calculated score but it won't be saved
         const clientScore = questions.filter((q) => finalAnswers[q.id] === q.correct_option).length;
         setResultScore(clientScore);
         setResultTotal(questions.length);
@@ -135,13 +205,12 @@ const ExamSimulator = () => {
 
     setPhase("result");
 
-    // Refresh attempts
     if (student) {
       const { data } = await supabase.from("exam_attempts").select("*")
         .eq("student_id", student.id).order("created_at", { ascending: false });
       if (data) setPastAttempts(data as ExamAttempt[]);
     }
-  }, [student]);
+  }, [student, isOffline, isOfflineExam]);
 
   const moveToNext = useCallback((currentAnswers: Record<string, string>, questions: Question[], idx: number) => {
     if (idx >= questions.length - 1) {
@@ -182,16 +251,59 @@ const ExamSimulator = () => {
     return () => { if (questionTimerRef.current) clearInterval(questionTimerRef.current); };
   }, [phase, currentIndex, answers, examQuestions, moveToNext]);
 
+  const downloadForOffline = async () => {
+    if (!student?.major_id || allQuestions.length === 0) return;
+    setDownloadingOffline(true);
+    try {
+      const offlineQs: OfflineQuestion[] = allQuestions.map((q) => ({
+        ...q,
+        display_order: 0,
+      }));
+      await saveExamQuestions(student.major_id, offlineQs);
+      setHasOfflineQuestions(true);
+      setOfflineQuestionCount(offlineQs.length);
+      toast({
+        title: "تم التحميل",
+        description: `تم حفظ ${offlineQs.length} سؤال للاستخدام بدون إنترنت`,
+      });
+    } catch {
+      toast({
+        title: "خطأ",
+        description: "فشل حفظ الأسئلة",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingOffline(false);
+    }
+  };
+
   const startExam = async () => {
-    if (!student) return;
-    const picked = shuffleAndPick(allQuestions, MAX_QUESTIONS);
-    setExamQuestions(picked);
+    if (isOffline) {
+      // Start offline exam from cached questions
+      if (!student?.major_id) return;
+      try {
+        const cached = await getExamQuestions(student.major_id);
+        if (!cached || cached.length === 0) {
+          toast({ title: "لا توجد أسئلة محفوظة", description: "حمّل الأسئلة أولاً عند توفر الاتصال", variant: "destructive" });
+          return;
+        }
+        const picked = shuffleAndPick(cached, MAX_QUESTIONS) as Question[];
+        setExamQuestions(picked);
+        setIsOfflineExam(true);
+      } catch {
+        return;
+      }
+    } else {
+      if (!student) return;
+      const picked = shuffleAndPick(allQuestions, MAX_QUESTIONS) as Question[];
+      setExamQuestions(picked);
+      setIsOfflineExam(false);
+    }
+
     setCurrentIndex(0);
     setAnswers({});
     setTotalTimeLeft(TOTAL_TIME);
     setQuestionTimeLeft(PER_QUESTION_TIME);
-
-    // Don't insert attempt yet — wait until exam is finished to prevent score tampering
     setAttemptId(null);
     setPhase("exam");
   };
@@ -201,7 +313,6 @@ const ExamSimulator = () => {
     const newAnswers = { ...answers, [q.id]: option };
     setAnswers(newAnswers);
 
-    // Auto-advance after short delay
     setTimeout(() => {
       moveToNext(newAnswers, examQuestions, currentIndex);
     }, 300);
@@ -221,7 +332,7 @@ const ExamSimulator = () => {
     );
   }
 
-  if (!student?.major_id) {
+  if (!student?.major_id && !isOffline) {
     return (
       <div className="min-h-screen bg-background">
         <header className="gradient-primary text-white px-4 py-4">
@@ -243,8 +354,10 @@ const ExamSimulator = () => {
   if (phase === "intro") {
     const canAccess = isStaff || hasActiveSubscription;
     const attemptsUsed = pastAttempts.length;
-    const canStart = canAccess && attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
-    const questionsAvailable = Math.min(allQuestions.length, MAX_QUESTIONS);
+    const canStartOnline = canAccess && attemptsUsed < MAX_ATTEMPTS && allQuestions.length > 0;
+    const canStartOffline = isOffline && hasOfflineQuestions;
+    const canStart = isOffline ? canStartOffline : canStartOnline;
+    const questionsAvailable = isOffline ? offlineQuestionCount : Math.min(allQuestions.length, MAX_QUESTIONS);
 
     return (
       <div className="min-h-screen bg-background">
@@ -256,8 +369,30 @@ const ExamSimulator = () => {
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6 pb-20 md:pb-6 space-y-6">
+          {/* Offline banner */}
+          {isOffline && (
+            <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+              <CardContent className="py-3 px-4 flex items-center gap-2">
+                <WifiOff className="w-4 h-4 text-orange-500 shrink-0" />
+                <p className="text-sm text-orange-700 dark:text-orange-400">أنت في وضع أوفلاين — النتيجة ستُرسل تلقائياً عند عودة الاتصال</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pending sync indicator */}
+          {pendingResultsCount > 0 && (
+            <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/20">
+              <CardContent className="py-3 px-4 flex items-center gap-2">
+                <CloudUpload className="w-4 h-4 text-blue-500 shrink-0" />
+                <p className="text-sm text-blue-700 dark:text-blue-400">
+                  {pendingResultsCount} نتيجة في انتظار المزامنة
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <div>
-            <h1 className="text-2xl font-bold text-foreground">محاكاة اختبار {majorName}</h1>
+            <h1 className="text-2xl font-bold text-foreground">محاكاة اختبار {majorName || "التخصص"}</h1>
             <p className="text-sm text-muted-foreground mt-1">تدرب بذكاء.. لتضمن القبول.</p>
           </div>
 
@@ -265,14 +400,41 @@ const ExamSimulator = () => {
             <CardContent className="py-5 space-y-4">
               <h2 className="font-semibold text-foreground">تعليمات الاختبار</h2>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2"><Clock className="w-4 h-4 mt-0.5 text-primary shrink-0" /><span><strong>{questionsAvailable} سؤال</strong> في <strong>90 دقيقة</strong> كحد أقصى</span></li>
+                <li className="flex items-start gap-2"><Clock className="w-4 h-4 mt-0.5 text-primary shrink-0" /><span><strong>{Math.min(questionsAvailable, MAX_QUESTIONS)} سؤال</strong> في <strong>90 دقيقة</strong> كحد أقصى</span></li>
                 <li className="flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 text-orange-500 shrink-0" /><span>حد أقصى <strong>دقيقتين</strong> لكل سؤال — ينتقل تلقائياً عند انتهاء الوقت</span></li>
-                <li className="flex items-start gap-2"><RotateCcw className="w-4 h-4 mt-0.5 text-secondary shrink-0" /><span>مسموح بـ <strong>{MAX_ATTEMPTS} محاولات</strong> فقط (استخدمت {attemptsUsed})</span></li>
+                <li className="flex items-start gap-2"><RotateCcw className="w-4 h-4 mt-0.5 text-secondary shrink-0" /><span>مسموح بـ <strong>{MAX_ATTEMPTS} محاولات</strong> فقط {!isOffline && `(استخدمت ${attemptsUsed})`}</span></li>
               </ul>
             </CardContent>
           </Card>
 
-          {allQuestions.length === 0 && (
+          {/* Download for offline button */}
+          {!isOffline && allQuestions.length > 0 && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={downloadForOffline}
+              disabled={downloadingOffline}
+            >
+              {downloadingOffline ? (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 ml-2" />
+              )}
+              {hasOfflineQuestions
+                ? `تحديث الأسئلة المحفوظة (${offlineQuestionCount} سؤال)`
+                : `تحميل ${allQuestions.length} سؤال للأوفلاين`}
+            </Button>
+          )}
+
+          {/* Offline questions status */}
+          {hasOfflineQuestions && (
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{offlineQuestionCount} سؤال محفوظ للاستخدام بدون إنترنت</span>
+            </div>
+          )}
+
+          {!isOffline && allQuestions.length === 0 && (
             <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
               <CardContent className="py-4 text-center text-sm text-muted-foreground">
                 لا توجد أسئلة متاحة لتخصصك بعد. يرجى التواصل مع الإدارة.
@@ -280,7 +442,15 @@ const ExamSimulator = () => {
             </Card>
           )}
 
-          {!canAccess && (
+          {isOffline && !hasOfflineQuestions && (
+            <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+              <CardContent className="py-4 text-center text-sm text-muted-foreground">
+                لا توجد أسئلة محفوظة. حمّل الأسئلة أولاً عند توفر الاتصال.
+              </CardContent>
+            </Card>
+          )}
+
+          {!isOffline && !canAccess && (
             <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
               <CardContent className="py-4 text-center">
                 <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">يجب تفعيل اشتراكك للوصول إلى الاختبارات</p>
@@ -291,7 +461,9 @@ const ExamSimulator = () => {
 
           <Button onClick={startExam} disabled={!canStart} className="w-full" size="lg">
             <Play className="w-5 h-5 ml-2" />
-            {!canAccess ? "يجب تفعيل الاشتراك أولاً" : attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار"}
+            {isOffline
+              ? (hasOfflineQuestions ? "ابدأ اختبار أوفلاين" : "لا توجد أسئلة محفوظة")
+              : (!canAccess ? "يجب تفعيل الاشتراك أولاً" : attemptsUsed >= MAX_ATTEMPTS ? "استنفذت جميع المحاولات" : "ابدأ الاختبار")}
           </Button>
 
           {/* Past attempts */}
@@ -329,6 +501,14 @@ const ExamSimulator = () => {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        {/* Offline indicator during exam */}
+        {(isOffline || isOfflineExam) && (
+          <div className="bg-orange-500 text-white text-center text-xs py-1 flex items-center justify-center gap-1">
+            <WifiOff className="w-3 h-3" />
+            وضع أوفلاين — النتيجة ستُحفظ محلياً
+          </div>
+        )}
+
         {/* Timer bar */}
         <div className="bg-card border-b px-4 py-2">
           <div className="max-w-4xl mx-auto">
@@ -353,7 +533,6 @@ const ExamSimulator = () => {
               </div>
             </div>
             <Progress value={progress} className="h-1.5" />
-            {/* Question time progress */}
             <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-1000 rounded-full ${timeWarning ? "bg-red-500" : "bg-primary/50"}`}
@@ -430,6 +609,18 @@ const ExamSimulator = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {/* Offline result notice */}
+        {isOfflineExam && (
+          <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+            <CardContent className="py-3 px-4 flex items-center gap-2">
+              <CloudUpload className="w-4 h-4 text-orange-500 shrink-0" />
+              <p className="text-sm text-orange-700 dark:text-orange-400">
+                هذه النتيجة محفوظة محلياً وستُرسل تلقائياً عند عودة الاتصال
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className={passed ? "border-green-500" : "border-orange-500"}>
           <CardContent className="py-8 text-center">
             {passed ? (
@@ -474,7 +665,7 @@ const ExamSimulator = () => {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={() => setPhase("intro")} className="flex-1">
+          <Button onClick={() => { setPhase("intro"); setIsOfflineExam(false); }} className="flex-1">
             <RotateCcw className="w-4 h-4 ml-1" />العودة
           </Button>
           <Button variant="outline" asChild className="flex-1">
