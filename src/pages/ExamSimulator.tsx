@@ -747,6 +747,7 @@ const ExamSimulator = () => {
               </Button>
             </div>
           </CardContent>
+        </Card>
 
         {/* Review answers */}
         <div className="space-y-3">
