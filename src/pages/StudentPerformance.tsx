@@ -30,8 +30,13 @@ interface LessonRow {
 }
 
 interface QuestionRow {
-  id: string; lesson_id: string; correct_option: string;
+  id: string; lesson_id: string; correct_option: string; subject: string;
 }
+
+const SUBJECT_LABELS: Record<string, string> = {
+  biology: "أحياء", chemistry: "كيمياء", physics: "فيزياء",
+  math: "رياضيات", english: "إنجليزي", iq: "ذكاء", general: "عام",
+};
 
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))",
