@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GraduationCap, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const YEMEN_PHONE_REGEX = /^7[0-9]{8}$/;
+const isValidYemeniPhone = (p: string) => !p || YEMEN_PHONE_REGEX.test(p);
+
 const GOVERNORATES = [
   "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة",
   "صعدة", "عمران", "صنعاء", "المحويت", "ريمة", "البيضاء", "مأرب",
@@ -188,11 +191,15 @@ const CompleteProfile = () => {
                     <label className="text-sm font-medium">رقم الجوال</label>
                     <Input
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
                       placeholder="مثال: 777123456"
                       type="tel"
                       dir="ltr"
+                      className={phone && !isValidYemeniPhone(phone) ? "border-destructive" : ""}
                     />
+                    {phone && !isValidYemeniPhone(phone) && (
+                      <p className="text-xs text-destructive">يجب أن يبدأ بـ 7 ويتكون من 9 أرقام</p>
+                    )}
                   </div>
                 )}
                 <div className="space-y-2">
@@ -210,7 +217,7 @@ const CompleteProfile = () => {
                 </div>
                 <Button
                   onClick={() => setStep(2)}
-                  disabled={!firstName || !fourthName || !governorate}
+                  disabled={!firstName || !fourthName || !governorate || (showPhone && phone ? !isValidYemeniPhone(phone) : false)}
                   className="w-full py-5 text-base font-bold gap-2"
                 >
                   التالي
