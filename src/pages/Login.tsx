@@ -1,27 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { GraduationCap, Phone, ArrowRight } from "lucide-react";
+import { GraduationCap, Phone, ArrowRight, Loader2 } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { resolveAuthDestination } from "@/lib/authRouting";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [phoneStep, setPhoneStep] = useState<"idle" | "phone" | "otp">("idle");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
+
+  // On mount: if session exists, redirect immediately
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const dest = await resolveAuthDestination(session.user.id);
+        navigate(dest.path, { replace: true });
+      } else {
+        setCheckingSession(false);
+      }
+    });
+  }, [navigate]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin + "/login",
       });
 
       if (result.error) {
@@ -35,23 +49,16 @@ const Login = () => {
       }
 
       if (result.redirected) {
+        // Browser will redirect to Google — just return
         return;
       }
 
-      // Check if profile is complete
+      // Session was set by lovable SDK (non-redirect flow)
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id ?? "";
-      const { data: student } = await supabase
-        .from("students")
-        .select("major_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      toast({ title: "تم تسجيل الدخول بنجاح" });
-      if (!student?.major_id) {
-        navigate("/complete-profile");
-      } else {
-        navigate("/dashboard");
+      if (session) {
+        const dest = await resolveAuthDestination(session.user.id);
+        toast({ title: "تم تسجيل الدخول بنجاح" });
+        navigate(dest.path, { replace: true });
       }
     } catch {
       toast({
@@ -73,7 +80,6 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    // Phone OTP will be implemented later with Twilio
     toast({
       title: "قريباً",
       description: "تسجيل الدخول برقم الجوال سيكون متاحاً قريباً",
@@ -84,13 +90,21 @@ const Login = () => {
   const handleVerifyOtp = async () => {
     if (otpCode.length !== 6) return;
     setLoading(true);
-    // OTP verification will be implemented later
     toast({
       title: "قريباً",
       description: "التحقق من الرمز سيكون متاحاً قريباً",
     });
     setLoading(false);
   };
+
+  // Show loading while checking existing session
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center px-4 py-8">
@@ -113,7 +127,6 @@ const Login = () => {
           <CardContent className="space-y-4">
             {phoneStep === "idle" && (
               <>
-                {/* Google Login Button */}
                 <Button
                   onClick={handleGoogleLogin}
                   disabled={loading}
@@ -138,7 +151,6 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Phone Login Button */}
                 <Button
                   onClick={() => setPhoneStep("phone")}
                   disabled={loading}
@@ -200,11 +212,7 @@ const Login = () => {
                   تم إرسال رمز مكون من 6 أرقام إلى +967{phoneNumber}
                 </p>
                 <div className="flex justify-center" dir="ltr">
-                  <InputOTP
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={setOtpCode}
-                  >
+                  <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
                     <InputOTPGroup>
                       <InputOTPSlot index={0} />
                       <InputOTPSlot index={1} />
