@@ -32,12 +32,17 @@ export const ALL_PERMISSIONS: ModeratorPermission[] = [
 
 export const useModeratorPermissions = (
   userId: string | undefined,
-  isAdmin: boolean
+  isAdmin: boolean,
+  authLoading: boolean = false
 ) => {
   const [permissions, setPermissions] = useState<ModeratorPermission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     if (!userId) return;
     if (isAdmin) {
       setPermissions([...ALL_PERMISSIONS]);
@@ -55,7 +60,7 @@ export const useModeratorPermissions = (
         );
         setLoading(false);
       });
-  }, [userId, isAdmin]);
+  }, [userId, isAdmin, authLoading]);
 
   const hasPermission = (permission: ModeratorPermission): boolean => {
     if (isAdmin) return true;

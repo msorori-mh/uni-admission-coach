@@ -44,8 +44,8 @@ const reportSubItems: NavItem[] = [
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
-  const { hasPermission } = useModeratorPermissions(user?.id, isAdmin);
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { hasPermission } = useModeratorPermissions(user?.id, isAdmin, authLoading);
   const isReportsRoute = location.pathname.startsWith("/admin/reports");
   const [reportsOpen, setReportsOpen] = useState(isReportsRoute);
 
