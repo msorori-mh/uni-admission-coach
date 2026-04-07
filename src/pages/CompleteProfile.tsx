@@ -194,6 +194,15 @@ const CompleteProfile = () => {
                   التالي
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem("profile_skipped", "true");
+                    navigate("/dashboard");
+                  }}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                >
+                  تخطي الآن وإكمال لاحقاً
+                </button>
               </>
             )}
 
