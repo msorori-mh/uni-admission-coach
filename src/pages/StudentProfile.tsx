@@ -6,17 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { GraduationCap, ArrowRight, User, School, Save, Loader2 } from "lucide-react";
+import { GraduationCap, ArrowRight, User, School, Phone, Save, Loader2 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
-const governorates = [
-  "عدن", "تعز", "مأرب", "حضرموت", "شبوة", "أبين", "لحج", "الضالع",
-  "صنعاء", "عمران", "ذمار", "إب", "الحديدة", "حجة", "صعدة", "المهرة",
-  "سقطرى", "الجوف", "البيضاء", "المحويت", "ريمة",
+const GOVERNORATES = [
+  "أمانة العاصمة", "عدن", "تعز", "الحديدة", "إب", "ذمار", "حجة",
+  "صعدة", "عمران", "صنعاء", "المحويت", "ريمة", "البيضاء", "مأرب",
+  "الجوف", "شبوة", "حضرموت", "المهرة", "أبين", "لحج", "الضالع", "سقطرى",
 ];
+
+const YEMEN_PHONE_REGEX = /^7[0-9]{8}$/;
+const isValidYemeniPhone = (p: string) => !p || YEMEN_PHONE_REGEX.test(p);
 
 const StudentProfile = () => {
   const navigate = useNavigate();
@@ -26,11 +29,11 @@ const StudentProfile = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   // Student data
-  const [student, setStudent] = useState<Tables<"students"> | null>(null);
   const [firstName, setFirstName] = useState("");
   const [secondName, setSecondName] = useState("");
   const [thirdName, setThirdName] = useState("");
   const [fourthName, setFourthName] = useState("");
+  const [phone, setPhone] = useState("");
   const [governorate, setGovernorate] = useState("");
   const [gpa, setGpa] = useState("");
   const [coordinationNumber, setCoordinationNumber] = useState("");
@@ -45,21 +48,12 @@ const StudentProfile = () => {
   const [colleges, setColleges] = useState<Tables<"colleges">[]>([]);
   const [majors, setMajors] = useState<Tables<"majors">[]>([]);
 
-  // University/college names for display
-  const [universityName, setUniversityName] = useState("");
-  const [collegeName, setCollegeName] = useState("");
-  const [majorName, setMajorName] = useState("");
-
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
+      if (!session) { navigate("/login"); return; }
       setUserId(session.user.id);
 
-      // Fetch student data
       const { data: studentData } = await supabase
         .from("students")
         .select("*")
@@ -67,11 +61,11 @@ const StudentProfile = () => {
         .maybeSingle();
 
       if (studentData) {
-        setStudent(studentData);
         setFirstName(studentData.first_name || "");
         setSecondName(studentData.second_name || "");
         setThirdName(studentData.third_name || "");
         setFourthName(studentData.fourth_name || "");
+        setPhone(studentData.phone || "");
         setGovernorate(studentData.governorate || "");
         setGpa(studentData.gpa?.toString() || "");
         setCoordinationNumber(studentData.coordination_number || "");
@@ -80,71 +74,41 @@ const StudentProfile = () => {
         setMajorId(studentData.major_id || "");
       }
 
-      // Fetch universities
       const { data: uniData } = await supabase
-        .from("universities")
-        .select("*")
-        .eq("is_active", true)
-        .order("display_order");
+        .from("universities").select("*").eq("is_active", true).order("display_order");
       if (uniData) setUniversities(uniData);
 
       setLoading(false);
     };
-
     init();
   }, [navigate]);
 
   // Fetch colleges when university changes
   useEffect(() => {
-    if (!universityId) {
-      setColleges([]);
-      return;
-    }
-    const fetchColleges = async () => {
-      const { data } = await supabase
-        .from("colleges")
-        .select("*")
-        .eq("university_id", universityId)
-        .eq("is_active", true)
-        .order("display_order");
-      if (data) setColleges(data);
-    };
-    fetchColleges();
-    // Set university name
-    const uni = universities.find((u) => u.id === universityId);
-    setUniversityName(uni?.name_ar || "");
-  }, [universityId, universities]);
+    if (!universityId) { setColleges([]); return; }
+    supabase.from("colleges").select("*")
+      .eq("university_id", universityId).eq("is_active", true).order("display_order")
+      .then(({ data }) => { if (data) setColleges(data); });
+  }, [universityId]);
 
   // Fetch majors when college changes
   useEffect(() => {
-    if (!collegeId) {
-      setMajors([]);
-      return;
-    }
-    const fetchMajors = async () => {
-      const { data } = await supabase
-        .from("majors")
-        .select("*")
-        .eq("college_id", collegeId)
-        .eq("is_active", true)
-        .order("display_order");
-      if (data) setMajors(data);
-    };
-    fetchMajors();
-    const col = colleges.find((c) => c.id === collegeId);
-    setCollegeName(col?.name_ar || "");
-  }, [collegeId, colleges]);
-
-  useEffect(() => {
-    const maj = majors.find((m) => m.id === majorId);
-    setMajorName(maj?.name_ar || "");
-  }, [majorId, majors]);
+    if (!collegeId) { setMajors([]); return; }
+    supabase.from("majors").select("*")
+      .eq("college_id", collegeId).eq("is_active", true).order("display_order")
+      .then(({ data }) => { if (data) setMajors(data); });
+  }, [collegeId]);
 
   const handleSave = async () => {
     if (!userId) return;
 
-    if (!firstName || !secondName || !thirdName || !fourthName) {
-      toast({ variant: "destructive", title: "يرجى إدخال الاسم الرباعي كاملاً" });
+    if (!firstName || !fourthName) {
+      toast({ variant: "destructive", title: "يرجى إدخال الاسم الأول واللقب على الأقل" });
+      return;
+    }
+
+    if (phone && !isValidYemeniPhone(phone)) {
+      toast({ variant: "destructive", title: "رقم الجوال غير صحيح", description: "يجب أن يبدأ بـ 7 ويتكون من 9 أرقام" });
       return;
     }
 
@@ -156,34 +120,28 @@ const StudentProfile = () => {
 
     setSaving(true);
 
-    const updateData = {
-      first_name: firstName,
-      second_name: secondName,
-      third_name: thirdName,
-      fourth_name: fourthName,
-      governorate: governorate || null,
-      gpa: gpaNum,
-      coordination_number: coordinationNumber || null,
-      university_id: universityId || null,
-      college_id: collegeId || null,
-      major_id: majorId || null,
-    };
-
     const { error } = await supabase
       .from("students")
-      .update(updateData)
+      .update({
+        first_name: firstName,
+        second_name: secondName || null,
+        third_name: thirdName || null,
+        fourth_name: fourthName,
+        phone: phone || null,
+        governorate: governorate || null,
+        gpa: gpaNum,
+        coordination_number: coordinationNumber || null,
+        university_id: universityId || null,
+        college_id: collegeId || null,
+        major_id: majorId || null,
+      })
       .eq("user_id", userId);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "خطأ في الحفظ",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "خطأ في الحفظ", description: error.message });
     } else {
       toast({ title: "تم حفظ البيانات بنجاح" });
     }
-
     setSaving(false);
   };
 
@@ -197,7 +155,6 @@ const StudentProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="gradient-primary text-white px-4 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -206,12 +163,7 @@ const StudentProfile = () => {
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="text-white hover:bg-white/20 hover:text-white"
-            >
+            <Button variant="ghost" size="sm" asChild className="text-white hover:bg-white/20 hover:text-white">
               <Link to="/dashboard">
                 <ArrowRight className="w-4 h-4 ml-1" />
                 العودة
@@ -236,7 +188,7 @@ const StudentProfile = () => {
               </div>
               <div>
                 <CardTitle className="text-lg">البيانات الشخصية</CardTitle>
-                <CardDescription className="text-xs">الاسم الرباعي والمحافظة والمعدل</CardDescription>
+                <CardDescription className="text-xs">الاسم والمحافظة والمعدل</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -262,13 +214,31 @@ const StudentProfile = () => {
 
             <Separator />
 
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                رقم الجوال
+              </Label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                placeholder="مثال: 777123456"
+                type="tel"
+                dir="ltr"
+                className={`text-left ${phone && !isValidYemeniPhone(phone) ? "border-destructive" : ""}`}
+              />
+              {phone && !isValidYemeniPhone(phone) && (
+                <p className="text-xs text-destructive">يجب أن يبدأ بـ 7 ويتكون من 9 أرقام</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">المحافظة</Label>
                 <Select value={governorate} onValueChange={setGovernorate}>
                   <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
                   <SelectContent>
-                    {governorates.map((g) => (
+                    {GOVERNORATES.map((g) => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
@@ -282,9 +252,7 @@ const StudentProfile = () => {
                   onChange={(e) => setGpa(e.target.value)}
                   dir="ltr"
                   className="text-left"
-                  min="0"
-                  max="100"
-                  step="0.01"
+                  min="0" max="100" step="0.01"
                 />
               </div>
             </div>
@@ -317,73 +285,47 @@ const StudentProfile = () => {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs">الجامعة</Label>
-              <select
-                value={universityId}
-                onChange={(e) => {
-                  setUniversityId(e.target.value);
-                  setCollegeId("");
-                  setMajorId("");
-                }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">اختر الجامعة</option>
-                {universities.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name_ar}</option>
-                ))}
-              </select>
+              <Select value={universityId} onValueChange={(v) => { setUniversityId(v); setCollegeId(""); setMajorId(""); }}>
+                <SelectTrigger><SelectValue placeholder="اختر الجامعة" /></SelectTrigger>
+                <SelectContent>
+                  {universities.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.name_ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">الكلية</Label>
-              <select
-                value={collegeId}
-                onChange={(e) => {
-                  setCollegeId(e.target.value);
-                  setMajorId("");
-                }}
-                disabled={!universityId || colleges.length === 0}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">{!universityId ? "اختر الجامعة أولاً" : "اختر الكلية"}</option>
-                {colleges.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name_ar}</option>
-                ))}
-              </select>
+              <Select value={collegeId} onValueChange={(v) => { setCollegeId(v); setMajorId(""); }} disabled={!universityId}>
+                <SelectTrigger><SelectValue placeholder={!universityId ? "اختر الجامعة أولاً" : "اختر الكلية"} /></SelectTrigger>
+                <SelectContent>
+                  {colleges.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs">التخصص</Label>
-              <select
-                value={majorId}
-                onChange={(e) => setMajorId(e.target.value)}
-                disabled={!collegeId || majors.length === 0}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">{!collegeId ? "اختر الكلية أولاً" : "اختر التخصص"}</option>
-                {majors.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name_ar}</option>
-                ))}
-              </select>
+              <Select value={majorId} onValueChange={setMajorId} disabled={!collegeId}>
+                <SelectTrigger><SelectValue placeholder={!collegeId ? "اختر الكلية أولاً" : "اختر التخصص"} /></SelectTrigger>
+                <SelectContent>
+                  {majors.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name_ar}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Save Button */}
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-5 font-bold text-base"
-        >
+        <Button onClick={handleSave} disabled={saving} className="w-full py-5 font-bold text-base">
           {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-              جاري الحفظ...
-            </>
+            <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري الحفظ...</>
           ) : (
-            <>
-              <Save className="w-4 h-4 ml-2" />
-              حفظ التعديلات
-            </>
+            <><Save className="w-4 h-4 ml-2" />حفظ التعديلات</>
           )}
         </Button>
       </main>
