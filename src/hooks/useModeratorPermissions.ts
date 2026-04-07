@@ -39,6 +39,10 @@ export const useModeratorPermissions = (
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     if (!userId) return;
     if (isAdmin) {
       setPermissions([...ALL_PERMISSIONS]);
