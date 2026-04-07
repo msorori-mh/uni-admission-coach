@@ -60,7 +60,7 @@ export const useModeratorPermissions = (
         );
         setLoading(false);
       });
-  }, [userId, isAdmin]);
+  }, [userId, isAdmin, authLoading]);
 
   const hasPermission = (permission: ModeratorPermission): boolean => {
     if (isAdmin) return true;

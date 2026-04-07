@@ -11,8 +11,8 @@ interface PermissionGateProps {
 }
 
 const PermissionGate = ({ permission, children }: PermissionGateProps) => {
-  const { user, isAdmin } = useAuth("moderator");
-  const { loading, hasPermission } = useModeratorPermissions(user?.id, isAdmin);
+  const { user, isAdmin, loading: authLoading } = useAuth("moderator");
+  const { loading, hasPermission } = useModeratorPermissions(user?.id, isAdmin, authLoading);
   const navigate = useNavigate();
   const { toast } = useToast();
 
