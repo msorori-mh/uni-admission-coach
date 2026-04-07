@@ -1,111 +1,46 @@
 
-ملخص المشكلة
 
-تسجيل الدخول بحساب Google ينجح فعلياً في بيئة الإنتاج، لكن التطبيق لا يكمل “التحويل بعد المصادقة” بشكل صحيح. الدليل على ذلك:
-- سجلات المصادقة تُظهر نجاح تسجيل الدخول عبر Google.
-- صفحة `Login.tsx` تعتمد بعد الضغط على Google على كودٍ لن يُكمل التنفيذ بعد إعادة التوجيه الخارجية.
-- `redirect_uri` الحالي يعود إلى `window.location.origin`، أي الصفحة الرئيسية `/`، بينما صفحة `Index.tsx` لا تفحص وجود جلسة نشطة ولا تعيد توجيه المستخدم.
-- `useAuth.ts` ينفذ منطقاً مكرراً ويحتوي استعلامات داخل `onAuthStateChange`، وهذا يزيد احتمال السباق أثناء استعادة الجلسة في الإنتاج.
+## Problem
 
-النتيجة الحالية:
+Race condition in `PermissionGate`: `useAuth` sets `user` before `roles` are fetched, causing `useModeratorPermissions` to evaluate permissions with `isAdmin=false` and redirect prematurely.
+
+## Timeline of the bug
+
 ```text
-Google Login -> عودة إلى / -> ظهور صفحة "ابدأ الآن / تسجيل الدخول" -> المستخدم يضغط دخول -> تتكرر الدورة
+1. useAuth: setUser(session.user)         → user is set, isAdmin still false
+2. useModeratorPermissions(userId, false)  → queries moderator_permissions, finds nothing
+3. useModeratorPermissions: loading=false, permissions=[]
+4. PermissionGate: !loading && !hasPermission → REDIRECT to /admin ❌
+5. useAuth: setRoles(["admin"])            → isAdmin=true (TOO LATE)
 ```
 
-التدفق المطلوب بعد الإصلاح
-```text
-أول مرة:
-  /login -> Google أو الجوال -> نجاح الدخول
-    -> فحص الدور + بيانات الطالب
-      -> طالب و major_id فارغ ولم يتخطَّ -> /complete-profile
-      -> طالب مكتمل أو تخطّى -> /dashboard
-      -> إداري/مشرف -> صفحة الإدارة المناسبة
+## Fix
 
-المرات التالية:
-  فتح التطبيق -> إذا الجلسة موجودة:
-    -> /complete-profile أو /dashboard مباشرة
-  بدون إعادة تسجيل الدخول
-```
+**File: `src/components/admin/PermissionGate.tsx`**
+- Also read `loading` from `useAuth` (the auth loading state)
+- Only evaluate permissions when BOTH `useAuth` loading AND `useModeratorPermissions` loading are complete
+- This ensures `isAdmin` is resolved before `hasPermission` is checked
 
-خطة التنفيذ
+**File: `src/hooks/useModeratorPermissions.ts`**  
+- Add a guard: if the hook receives `userId` but `useAuth` is still loading (i.e., `isAdmin` might change), don't finalize yet
+- Simpler approach: accept an `authLoading` parameter, and keep `loading=true` until `authLoading` is `false`
 
-1) توحيد منطق “تحديد الوجهة بعد تسجيل الدخول”
-- إنشاء دالة/منطق مشترك لحسم المسار النهائي اعتماداً على:
-  - وجود جلسة
-  - أدوار المستخدم من `user_roles`
-  - اكتمال ملف الطالب من `students.major_id`
-  - علم التخطي `profile_skipped`
-- الهدف: عدم تكرار نفس الفحص في `Login.tsx` و`useAuth.ts` و`Index.tsx` بشكل متضارب.
+### Concrete changes
 
-2) إصلاح صفحة `Login.tsx`
-- تغيير `redirect_uri` ليعود إلى `/login` بدلاً من `/`.
-- إضافة فحص تلقائي عند تحميل الصفحة:
-  - إذا كانت هناك جلسة نشطة، لا تُعرض أزرار تسجيل الدخول أصلاً.
-  - يتم تحويل المستخدم مباشرة إلى:
-    - `/complete-profile` إذا لم يكمل بياناته
-    - `/dashboard` إذا كان مكتملًا أو اختار التخطي
-    - صفحة الإدارة إذا كان إداريًا/مشرفًا
-- عدم الاعتماد على الكود الذي يأتي بعد `signInWithOAuth(...).redirected` لتحديد الوجهة؛ لأن هذا الجزء لا يخدم حالة إعادة التوجيه الخارجية في الإنتاج.
+1. **`useModeratorPermissions.ts`**: Add optional `authLoading` parameter. When `authLoading` is true, keep internal loading true and skip the query.
 
-3) إعادة تنظيم `useAuth.ts`
-- جعل تهيئة المصادقة تبدأ بـ `getSession()` أولاً حتى تكتمل استعادة الجلسة من التخزين المحلي.
-- بعد ذلك فقط يُفعل مستمع `onAuthStateChange`.
-- نقل الاستعلامات الثقيلة خارج callback المباشر قدر الإمكان، وتجنب `await` الطويل داخله.
-- توحيد منطق التوجيه ومنع التكرار الحالي بين:
-  - أول تحميل
-  - تغيّر حالة المصادقة
-- الحفاظ على سلوك التخطي المؤقت:
-  - إذا لا يوجد `major_id` ولا يوجد `profile_skipped` -> `/complete-profile`
-  - غير ذلك -> السماح بالدخول
+2. **`PermissionGate.tsx`**: Pass `loading` from `useAuth` into `useModeratorPermissions`:
+   ```ts
+   const { user, isAdmin, loading: authLoading } = useAuth("moderator");
+   const { loading, hasPermission } = useModeratorPermissions(user?.id, isAdmin, authLoading);
+   ```
 
-4) جعل الصفحات العامة ذكية مع الجلسة الحالية
-- تحديث `Index.tsx` بحيث:
-  - إذا فتح المستخدم التطبيق والجلسة محفوظة، ينتقل مباشرة إلى المسار المناسب بدل عرض “ابدأ الآن”.
-- الإبقاء على تجربة الصفحة العامة فقط لغير المسجلين.
-- هذا ضروري لتحقيق شرط “يدخل مباشرة للتطبيق بدون تسجيل دخول كل مرة”.
+3. **`AdminLayout.tsx`**: Same pattern — pass auth loading to `useModeratorPermissions`.
 
-5) مراجعة المسارات ذات العلاقة
-- التأكد من أن `App.tsx` ما زال يدعم:
-  - `/login`
-  - `/complete-profile`
-  - `/dashboard`
-- مراجعة أي بقايا قديمة تشير إلى `/register` حتى لا تعيد المستخدم إلى تدفق لم يعد معتمداً.
-- تنظيف `MobileBottomNav.tsx` من الاعتماد على `/register` كمسار عام إن لم يعد مستخدماً.
+4. **`AdminSubscriptionPlans.tsx`** and **`AdminPromoCodes.tsx`**: Already use `useAuth("moderator")` separately from `PermissionGate`, no changes needed there since the gate handles access control.
 
-6) تثبيت سلوك إكمال البيانات
-- الإبقاء على `CompleteProfile.tsx` كمرحلة تالية مباشرة لأول دخول.
-- بعد الحفظ:
-  - حذف `profile_skipped`
-  - التحويل إلى `/dashboard`
-- عند التخطي:
-  - حفظ `profile_skipped`
-  - السماح بالدخول المؤقت إلى `/dashboard`
-- لاحقاً يظهر التذكير الموجود في لوحة التحكم كما هو.
+### Files to modify
+- `src/hooks/useModeratorPermissions.ts`
+- `src/components/admin/PermissionGate.tsx`
+- `src/components/admin/AdminLayout.tsx`
 
-7) التحقق بعد التنفيذ
-- اختبار سيناريوهات القبول التالية:
-  1. مستخدم جديد عبر Google:
-     - يعود إلى `/login`
-     - ينتقل تلقائياً إلى `/complete-profile`
-     - بعد الحفظ يصل إلى `/dashboard`
-  2. مستخدم جديد يختار التخطي:
-     - يصل إلى `/dashboard`
-     - يظهر له التذكير
-  3. مستخدم سابق مكتمل البيانات:
-     - يفتح التطبيق لاحقاً ويصل مباشرة إلى `/dashboard`
-  4. مستخدم يغلق التطبيق ويفتحه مرة أخرى:
-     - لا يرى صفحة “ابدأ الآن / تسجيل الدخول” طالما الجلسة محفوظة
-  5. مستخدم إداري:
-     - لا يُفرض عليه مسار إكمال بيانات الطالب
-
-الملفات المتوقع تعديلها
-- `src/pages/Login.tsx`
-- `src/hooks/useAuth.ts`
-- `src/pages/Index.tsx`
-- `src/components/MobileBottomNav.tsx`
-- وربما استخراج helper صغير مشترك داخل `src/lib` أو `src/hooks` لتحديد وجهة ما بعد تسجيل الدخول
-
-ملاحظات تقنية
-- لا حاجة إلى تغيير قاعدة البيانات؛ السجلات الحالية تشير إلى أن المشكلة في منطق الواجهة وإدارة الجلسة بعد OAuth.
-- الـ trigger `handle_new_user` الحالي مناسب لإنشاء سجل الطالب الأولي.
-- المشكلة الأساسية ليست فشل Google نفسه، بل أن التطبيق يعود إلى صفحة عامة غير واعية بوجود جلسة، مع منطق توجيه غير موحد وقد يتسابق أثناء استعادة الجلسة في الإنتاج.
