@@ -119,6 +119,7 @@ const CompleteProfile = () => {
       .update({
         first_name: firstName,
         fourth_name: fourthName,
+        phone: phone || null,
         governorate,
         university_id: universityId,
         college_id: collegeId,
