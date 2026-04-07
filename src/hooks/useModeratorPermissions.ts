@@ -32,7 +32,8 @@ export const ALL_PERMISSIONS: ModeratorPermission[] = [
 
 export const useModeratorPermissions = (
   userId: string | undefined,
-  isAdmin: boolean
+  isAdmin: boolean,
+  authLoading: boolean = false
 ) => {
   const [permissions, setPermissions] = useState<ModeratorPermission[]>([]);
   const [loading, setLoading] = useState(true);
