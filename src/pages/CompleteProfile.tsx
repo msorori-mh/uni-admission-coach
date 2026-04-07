@@ -25,10 +25,12 @@ const CompleteProfile = () => {
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [showPhone, setShowPhone] = useState(false);
 
   // Step 1 fields
   const [firstName, setFirstName] = useState("");
   const [fourthName, setFourthName] = useState("");
+  const [phone, setPhone] = useState("");
   const [governorate, setGovernorate] = useState("");
 
   // Step 2 fields
@@ -46,10 +48,15 @@ const CompleteProfile = () => {
         navigate("/login");
         return;
       }
-      // Check if profile already complete
+
+      // Show phone field only for email/Google signups (not phone auth)
+      const provider = session.user.app_metadata?.provider;
+      const hasPhone = !!session.user.phone;
+      setShowPhone(!hasPhone && provider !== 'phone');
+
       const { data: student } = await supabase
         .from("students")
-        .select("id, first_name, fourth_name, governorate, major_id")
+        .select("id, first_name, fourth_name, governorate, major_id, phone")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
@@ -63,6 +70,7 @@ const CompleteProfile = () => {
         if (student.first_name) setFirstName(student.first_name);
         if (student.fourth_name) setFourthName(student.fourth_name);
         if (student.governorate) setGovernorate(student.governorate);
+        if (student.phone) setPhone(student.phone);
       }
       setCheckingAuth(false);
     };
@@ -111,6 +119,7 @@ const CompleteProfile = () => {
       .update({
         first_name: firstName,
         fourth_name: fourthName,
+        phone: phone || null,
         governorate,
         university_id: universityId,
         college_id: collegeId,
@@ -174,6 +183,18 @@ const CompleteProfile = () => {
                     placeholder="أدخل لقبك"
                   />
                 </div>
+                {showPhone && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">رقم الجوال</label>
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="مثال: 777123456"
+                      type="tel"
+                      dir="ltr"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">المحافظة</label>
                   <Select value={governorate} onValueChange={setGovernorate}>
