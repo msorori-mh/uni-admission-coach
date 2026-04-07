@@ -598,6 +598,7 @@ export type Database = {
           gpa: number | null
           id: string
           major_id: string | null
+          phone: string | null
           second_name: string | null
           third_name: string | null
           university_id: string | null
@@ -614,6 +615,7 @@ export type Database = {
           gpa?: number | null
           id?: string
           major_id?: string | null
+          phone?: string | null
           second_name?: string | null
           third_name?: string | null
           university_id?: string | null
@@ -630,6 +632,7 @@ export type Database = {
           gpa?: number | null
           id?: string
           major_id?: string | null
+          phone?: string | null
           second_name?: string | null
           third_name?: string | null
           university_id?: string | null
