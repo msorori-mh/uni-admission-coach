@@ -198,8 +198,8 @@ const Register = () => {
         {/* Logo */}
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1.5">
+              <img src={logoImg} alt="شعار قَبُول" className="w-full h-full object-contain" />
             </div>
             <span className="text-2xl font-bold text-white">قَبُول</span>
           </Link>
