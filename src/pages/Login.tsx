@@ -113,8 +113,8 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1.5">
-              <img src={logoImg} alt="شعار قَبُول" className="w-full h-full object-contain" />
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img src={logoImg} alt="شعار قَبُول" className="w-full h-full object-contain drop-shadow-lg" />
             </div>
             <span className="text-2xl font-bold text-white">قَبُول</span>
           </Link>
