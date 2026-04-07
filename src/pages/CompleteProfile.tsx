@@ -217,7 +217,7 @@ const CompleteProfile = () => {
                 </div>
                 <Button
                   onClick={() => setStep(2)}
-                  disabled={!firstName || !fourthName || !governorate}
+                  disabled={!firstName || !fourthName || !governorate || (showPhone && phone ? !isValidYemeniPhone(phone) : false)}
                   className="w-full py-5 text-base font-bold gap-2"
                 >
                   التالي
