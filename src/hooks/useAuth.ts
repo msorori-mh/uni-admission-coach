@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -10,85 +10,77 @@ export const useAuth = (requiredRole?: AppRole) => {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!session) {
-          navigate("/login");
-          return;
-        }
-        setUser(session.user);
-        // Fetch roles
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id);
-        const userRoles = (data || []).map((r) => r.role as AppRole);
-        setRoles(userRoles);
+    if (initialized.current) return;
+    initialized.current = true;
 
-        if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes("admin")) {
-          navigate("/dashboard");
-          setLoading(false);
-          return;
-        }
+    const processSession = (userId: string) => {
+      // Fire-and-forget: no await inside onAuthStateChange
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .then(({ data }) => {
+          const userRoles = (data || []).map((r) => r.role as AppRole);
+          setRoles(userRoles);
 
-        // Check profile completeness for students
-        if (userRoles.includes("student") && !userRoles.includes("admin") && !userRoles.includes("moderator")) {
-          const currentPath = window.location.pathname;
-          if (currentPath !== "/complete-profile") {
-            const { data: student } = await supabase
-              .from("students")
-              .select("major_id")
-              .eq("user_id", session.user.id)
-              .maybeSingle();
-            if (!student?.major_id && !localStorage.getItem("profile_skipped")) {
-              navigate("/complete-profile");
-              setLoading(false);
+          if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes("admin")) {
+            navigate("/dashboard");
+            setLoading(false);
+            return;
+          }
+
+          // Check profile completeness for students only
+          if (
+            userRoles.includes("student") &&
+            !userRoles.includes("admin") &&
+            !userRoles.includes("moderator")
+          ) {
+            const currentPath = window.location.pathname;
+            if (currentPath !== "/complete-profile") {
+              supabase
+                .from("students")
+                .select("major_id")
+                .eq("user_id", userId)
+                .maybeSingle()
+                .then(({ data: student }) => {
+                  if (!student?.major_id && !localStorage.getItem("profile_skipped")) {
+                    navigate("/complete-profile");
+                  }
+                  setLoading(false);
+                });
               return;
             }
           }
-        }
-        setLoading(false);
-      }
-    );
+          setLoading(false);
+        });
+    };
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // 1. Restore session from storage first
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/login");
         return;
       }
       setUser(session.user);
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id);
-      const userRoles = (data || []).map((r) => r.role as AppRole);
-      setRoles(userRoles);
+      processSession(session.user.id);
+    });
 
-      if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes("admin")) {
-        navigate("/dashboard");
-        setLoading(false);
+    // 2. Listen for subsequent auth changes (sign-in, sign-out, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/login");
         return;
       }
-
-      // Check profile completeness for students
-      if (userRoles.includes("student") && !userRoles.includes("admin") && !userRoles.includes("moderator")) {
-        const currentPath = window.location.pathname;
-        if (currentPath !== "/complete-profile") {
-          const { data: student } = await supabase
-            .from("students")
-            .select("major_id")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-          if (!student?.major_id && !localStorage.getItem("profile_skipped")) {
-            navigate("/complete-profile");
-            setLoading(false);
-            return;
-          }
-        }
+      setUser(session.user);
+      // Re-process on sign-in events (not token refresh)
+      if (_event === "SIGNED_IN") {
+        processSession(session.user.id);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

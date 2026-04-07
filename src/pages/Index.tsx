@@ -1,10 +1,25 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, BookOpen, ClipboardCheck, TrendingUp } from "lucide-react";
+import { GraduationCap, BookOpen, ClipboardCheck, TrendingUp, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { resolveAuthDestination } from "@/lib/authRouting";
 
 const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  // Auto-redirect authenticated users
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const dest = await resolveAuthDestination(session.user.id);
+        navigate(dest.path, { replace: true });
+      } else {
+        setChecking(false);
+      }
+    });
+  }, [navigate]);
 
   const features = [
     {
@@ -23,6 +38,14 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
       description: "اختبارات محاكاة بتوقيت حقيقي لقياس جاهزيتك",
     },
   ];
+
+  if (checking) {
+    return (
+      <div ref={ref} className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="min-h-screen flex flex-col">
