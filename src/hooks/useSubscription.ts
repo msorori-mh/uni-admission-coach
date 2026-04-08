@@ -42,13 +42,17 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
       const isTrial = sub.status === "trial" && !!sub.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
 
       let planSlug: string | null = null;
+      let allowedMajorIds: string[] | null = null;
       if (sub.plan_id) {
         const { data: plan } = await supabase
           .from("subscription_plans")
-          .select("slug")
+          .select("slug, allowed_major_ids")
           .eq("id", sub.plan_id)
           .single();
-        if (plan) planSlug = plan.slug;
+        if (plan) {
+          planSlug = plan.slug;
+          allowedMajorIds = plan.allowed_major_ids;
+        }
       }
 
       setStatus({
