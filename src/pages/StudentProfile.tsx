@@ -100,7 +100,7 @@ const StudentProfile = () => {
   }, [collegeId]);
 
   const handleSave = async () => {
-    if (!userId) return;
+    if (!user) return;
 
     if (!firstName || !fourthName) {
       toast({ variant: "destructive", title: "يرجى إدخال الاسم الأول واللقب على الأقل" });
