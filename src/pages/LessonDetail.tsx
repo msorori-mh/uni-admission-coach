@@ -400,6 +400,34 @@ const LessonDetail = () => {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Prev/Next lesson navigation */}
+        {(prevLesson || nextLesson) && (
+          <div className="mt-6 flex items-stretch gap-3">
+            {prevLesson ? (
+              <Button variant="outline" className="flex-1 h-auto py-3 px-4 justify-start text-right gap-2" asChild>
+                <Link to={`/lessons/${prevLesson.id}`}>
+                  <ChevronRight className="w-5 h-5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground">الدرس السابق</p>
+                    <p className="text-sm font-medium truncate">{prevLesson.title}</p>
+                  </div>
+                </Link>
+              </Button>
+            ) : <div className="flex-1" />}
+            {nextLesson ? (
+              <Button variant="outline" className="flex-1 h-auto py-3 px-4 justify-end text-left gap-2" asChild>
+                <Link to={`/lessons/${nextLesson.id}`}>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground">الدرس التالي</p>
+                    <p className="text-sm font-medium truncate">{nextLesson.title}</p>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 shrink-0" />
+                </Link>
+              </Button>
+            ) : <div className="flex-1" />}
+          </div>
+        )}
         </>
         )}
       </main>
