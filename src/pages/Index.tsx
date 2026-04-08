@@ -59,14 +59,14 @@ const Index = React.forwardRef<HTMLDivElement>((_, ref) => {
         
         <div className="relative z-10 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center justify-center w-40 h-40 mb-6 animate-float rounded-full overflow-hidden bg-white/20 backdrop-blur-sm">
-            <img src={logoImg} alt="شعار قَبُول" className="w-full h-full object-cover drop-shadow-lg" />
+            <img src={logoImg} alt="شعار مُفَاضَلَة" className="w-full h-full object-cover drop-shadow-lg" />
           </div>
           
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            قَبُول
+            مُفَاضَلَة
           </h1>
           <p className="text-lg md:text-xl text-white/85 mb-8 leading-relaxed">
-            قَبُول.. خطوتك الأولى نحو كليات القمة.
+            مُفَاضَلَة... هندسة النجاح في اختبارات القبول.
           </p>
           
           <Button
