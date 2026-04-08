@@ -159,10 +159,6 @@ const LessonDetail = () => {
     }
   };
 
-  const correctCount = submitted
-    ? questions.filter((q) => answers[q.id] === q.correct_option).length
-    : 0;
-
   if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
