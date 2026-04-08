@@ -18,7 +18,7 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
   const [status, setStatus] = useState<SubscriptionStatus>({
     hasSubscription: false, isActive: false, isPending: false,
     isTrial: false, trialEndsAt: null,
-    expiresAt: null, planId: null, planSlug: null, loading: true,
+    expiresAt: null, planId: null, planSlug: null, allowedMajorIds: null, loading: true,
   });
 
   useEffect(() => {
