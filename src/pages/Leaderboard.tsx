@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,6 +41,7 @@ const rankBg = (rank: number) => {
 };
 
 const Leaderboard = () => {
+  const { user } = useAuthContext();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [majors, setMajors] = useState<Major[]>([]);
   const [selectedMajor, setSelectedMajor] = useState<string>("all");
@@ -50,13 +52,11 @@ const Leaderboard = () => {
     supabase.from("majors").select("id, name_ar").eq("is_active", true).order("name_ar")
       .then(({ data }) => { if (data) setMajors(data); });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const { data: s } = await supabase.from("students").select("id").eq("user_id", session.user.id).maybeSingle();
-        if (s) setCurrentStudentId(s.id);
-      }
-    });
-  }, []);
+    if (user) {
+      supabase.from("students").select("id").eq("user_id", user.id).maybeSingle()
+        .then(({ data: s }) => { if (s) setCurrentStudentId(s.id); });
+    }
+  }, [user]);
 
   useEffect(() => {
     setLoading(true);

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { GraduationCap, ArrowRight, User, School, Phone, Save, Loader2 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -24,9 +25,9 @@ const isValidYemeniPhone = (p: string) => !p || YEMEN_PHONE_REGEX.test(p);
 const StudentProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
   // Student data
   const [firstName, setFirstName] = useState("");
@@ -49,15 +50,14 @@ const StudentProfile = () => {
   const [majors, setMajors] = useState<Tables<"majors">[]>([]);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/login"); return; }
-      setUserId(session.user.id);
+    if (authLoading) return;
+    if (!user) { navigate("/login"); return; }
 
+    const init = async () => {
       const { data: studentData } = await supabase
         .from("students")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (studentData) {
@@ -100,7 +100,7 @@ const StudentProfile = () => {
   }, [collegeId]);
 
   const handleSave = async () => {
-    if (!userId) return;
+    if (!user) return;
 
     if (!firstName || !fourthName) {
       toast({ variant: "destructive", title: "يرجى إدخال الاسم الأول واللقب على الأقل" });
@@ -135,7 +135,7 @@ const StudentProfile = () => {
         college_id: collegeId || null,
         major_id: majorId || null,
       })
-      .eq("user_id", userId);
+      .eq("user_id", user.id);
 
     if (error) {
       toast({ variant: "destructive", title: "خطأ في الحفظ", description: error.message });
