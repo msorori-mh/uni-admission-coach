@@ -94,6 +94,20 @@ const LessonDetail = () => {
             setPlanCoversLesson(plan.allowed_major_ids.includes(l.major_id));
           }
         }
+        // Fetch sibling lessons for prev/next navigation
+        if (l.major_id) {
+          const { data: siblings } = await supabase
+            .from("lessons")
+            .select("id, title, display_order")
+            .eq("major_id", l.major_id)
+            .eq("is_published", true)
+            .order("display_order");
+          if (siblings && siblings.length > 0) {
+            const currentIdx = siblings.findIndex((s) => s.id === id);
+            setPrevLesson(currentIdx > 0 ? { id: siblings[currentIdx - 1].id, title: siblings[currentIdx - 1].title } : null);
+            setNextLesson(currentIdx < siblings.length - 1 ? { id: siblings[currentIdx + 1].id, title: siblings[currentIdx + 1].title } : null);
+          }
+        }
       }
       if (q) setQuestions(q as Question[]);
       if (s) {
