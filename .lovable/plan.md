@@ -1,36 +1,43 @@
 
 
-## تشخيص المشكلة
+## إصلاح مشكلة تكرار ظهور صفحة الدخول
 
-المشكلة الجذرية في مكانين:
+### المشكلة الجذرية
+كل صفحة (Dashboard, LessonDetail, Admin pages...) تتحقق من الجلسة بشكل مستقل عند كل تحميل. عند التنقل بين الصفحات، يُعاد التحقق من الجلسة في كل مرة. إذا أطلق `onAuthStateChange` حدث `INITIAL_SESSION` قبل استعادة الجلسة من التخزين، يتم إعادة التوجيه إلى `/login` بشكل خاطئ.
 
-1. **`planCoversLesson` يبدأ بـ `true` افتراضياً** (سطر 44 في LessonDetail.tsx) — عندما يكون المستخدم في فترة تجريبية (trial) بدون `planId`، لا يتم تغيير هذه القيمة أبداً، فتبقى `true`
-2. **الفترة التجريبية (24 ساعة) تُعامل كاشتراك نشط** — `isActive` يكون `true` أثناء التجربة، مما يعني `canAccess = true` لجميع الدروس
-
-### سلسلة الخطأ:
 ```text
-تسجيل جديد → trial تلقائي → hasActiveSubscription = true
-→ planId = null → planCoversLesson يبقى true (الافتراضي)
-→ canAccess = true → جميع الدروس مفتوحة!
+المستخدم يفتح /dashboard
+→ onAuthStateChange يطلق INITIAL_SESSION مع session=null
+→ navigate("/login") ← خطأ!
+→ getSession يستعيد الجلسة بعد ذلك ← متأخر
 ```
 
-## الإصلاح المطلوب
+### الحل: مركزة حالة المصادقة في Context واحد
 
-**ملف: `src/pages/LessonDetail.tsx`**
-- تغيير القيمة الافتراضية لـ `planCoversLesson` إلى `false`
-- تعديل منطق التحقق: عندما لا يوجد `planId` (اشتراك تجريبي بدون خطة)، يبقى `planCoversLesson = false` — أي لا يُفتح المحتوى المدفوع
-- عندما يوجد `planId` ولكن بدون `allowed_major_ids` (أو المصفوفة فارغة)، يعني الخطة تغطي جميع التخصصات → `planCoversLesson = true`
+**1. إنشاء ملف `src/contexts/AuthContext.tsx`**
+- إنشاء React Context يحتوي على حالة المصادقة (user, roles, loading, isAdmin, isModerator, isStaff)
+- التحقق من الجلسة **مرة واحدة فقط** عند تحميل التطبيق عبر `getSession`
+- الاستماع لتغييرات المصادقة عبر `onAuthStateChange` مع تجاهل `INITIAL_SESSION` (لأن `getSession` يتولى ذلك)
+- توفير hook `useAuthContext()` للاستخدام في الصفحات
 
-**ملف: `src/pages/LessonsList.tsx`**
-- تعديل منطق `isLocked` ليأخذ بعين الاعتبار أن الفترة التجريبية بدون خطة لا تفتح المحتوى المدفوع
-- إضافة تحقق من `planId` و `allowed_major_ids` لتحديد الدروس المقفلة بدقة
+**2. تعديل `src/App.tsx`**
+- لف التطبيق بـ `AuthProvider`
+- إضافة مكون `AuthGate` يعرض شاشة تحميل حتى تتم استعادة الجلسة
 
-**ملف: `src/hooks/useSubscription.ts`**
-- إضافة خاصية `allowedMajorIds` إلى واجهة `SubscriptionStatus` لتسهيل التحقق في الصفحات
-- جلب `allowed_major_ids` عند وجود `planId`
+**3. تعديل `src/hooks/useAuth.ts`**
+- تحويله ليقرأ من AuthContext بدلاً من التحقق المستقل
+- الإبقاء على منطق `requiredRole` للتوجيه حسب الصلاحيات
+- إزالة استدعاءات `getSession` و `onAuthStateChange` المكررة
 
-### النتيجة المتوقعة:
-- الدروس المجانية (`is_free = true`) متاحة للجميع
-- الدروس المدفوعة مقفلة ما لم يكن لدى المستخدم اشتراك نشط مع خطة تغطي تخصص الدرس
-- الفترة التجريبية بدون خطة لا تفتح المحتوى المدفوع
+**4. تعديل `src/pages/Dashboard.tsx`**
+- إزالة كود التحقق من الجلسة المضمّن (سطور 45-49) واستخدام `useAuthContext()` بدلاً منه
+- الإبقاء على باقي منطق جلب البيانات كما هو
+
+**5. تعديل باقي الصفحات التي تستخدم `supabase.auth` مباشرة**
+- مراجعة الصفحات التي تتحقق من الجلسة بشكل مستقل وتحويلها لاستخدام Context
+
+### النتيجة
+- التحقق من الجلسة يتم **مرة واحدة** عند فتح التطبيق
+- التنقل بين الصفحات لا يعيد التحقق
+- لا يظهر شاشة الدخول للمستخدم الذي سبق له تسجيل الدخول
 
