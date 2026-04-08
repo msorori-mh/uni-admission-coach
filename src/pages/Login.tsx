@@ -19,6 +19,14 @@ const Login = () => {
   const [phoneStep, setPhoneStep] = useState<"idle" | "phone" | "otp">("idle");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
   // On mount: if session exists, redirect immediately
   useEffect(() => {
