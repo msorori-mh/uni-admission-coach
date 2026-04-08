@@ -50,8 +50,9 @@ const Achievements = () => {
         totalLessons: lessons?.length ?? 0,
       });
       setLoading(false);
-    });
-  }, [navigate]);
+    };
+    fetchData();
+  }, [authLoading, user, navigate]);
 
   const items = achievements.map((a) => ({ ...a, unlocked: a.check(stats) }));
   const unlockedCount = items.filter((i) => i.unlocked).length;
