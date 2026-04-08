@@ -138,16 +138,13 @@ const LessonDetail = () => {
     toast.success("تم حذف النسخة المحفوظة");
   };
 
-  const handleAnswer = (questionId: string, option: string) => {
-    if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: option }));
-  };
-
-  const handleSubmit = () => setSubmitted(true);
-
-  const handleReset = () => {
-    setAnswers({});
-    setSubmitted(false);
+  const toggleRevealAnswer = (questionId: string) => {
+    setRevealedAnswers((prev) => {
+      const next = new Set(prev);
+      if (next.has(questionId)) next.delete(questionId);
+      else next.add(questionId);
+      return next;
+    });
   };
 
   const markComplete = async () => {
