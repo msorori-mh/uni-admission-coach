@@ -291,6 +291,63 @@ const AdminContent = () => {
     else { toast({ title: "تم الحذف" }); fetchData(); }
   };
 
+  // --- Import questions for specific lesson ---
+  const downloadQuestionsTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const data = [
+      ["نص السؤال", "الخيار أ", "الخيار ب", "الخيار ج", "الخيار د", "الإجابة الصحيحة (a/b/c/d)", "الشرح"],
+      ["ما هي لغة البرمجة؟", "أداة تصميم", "لغة حاسوب", "جهاز", "شبكة", "b", "لغة البرمجة هي لغة يفهمها الحاسوب"],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "الأسئلة");
+    XLSX.writeFile(wb, "قالب_استيراد_أسئلة.xlsx");
+  };
+
+  const handleImportQuestions = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedLesson) return;
+    setImportingQuestions(true);
+
+    try {
+      const data = await file.arrayBuffer();
+      const wb = file.name.endsWith(".csv")
+        ? XLSX.read(new TextDecoder("utf-8").decode(data), { type: "string" })
+        : XLSX.read(data, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+
+      let imported = 0;
+      const existingCount = questions.filter(q => q.lesson_id === selectedLesson).length;
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i] as any[];
+        if (!row[0]) continue;
+        const { error } = await supabase.from("questions").insert({
+          lesson_id: selectedLesson,
+          question_text: String(row[0]),
+          option_a: String(row[1] || ""),
+          option_b: String(row[2] || ""),
+          option_c: String(row[3] || ""),
+          option_d: String(row[4] || ""),
+          correct_option: String(row[5] || "a").toLowerCase().trim(),
+          explanation: row[6] ? String(row[6]) : "",
+          display_order: existingCount + i,
+        });
+        if (error) {
+          toast({ variant: "destructive", title: `خطأ في سؤال ${i}: ${error.message}` });
+        } else {
+          imported++;
+        }
+      }
+
+      toast({ title: `تم استيراد ${imported} سؤال بنجاح` });
+      fetchData();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: `خطأ في قراءة الملف: ${err.message}` });
+    }
+    setImportingQuestions(false);
+    setImportQuestionsDialogOpen(false);
+    if (questionFileInputRef.current) questionFileInputRef.current.value = "";
+  };
+
   // --- Import ---
   const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
