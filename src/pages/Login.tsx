@@ -292,6 +292,10 @@ const Login = () => {
             )}
           </CardContent>
         </Card>
+
+        <p className="text-center text-sm text-white/70 mt-4">
+          إذا لم يكن لديك حساب، سيتم إنشاؤه تلقائياً
+        </p>
       </div>
     </div>
   );
