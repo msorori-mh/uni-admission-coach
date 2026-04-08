@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { ChevronLeft, ChevronRight, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock, Star, Download, Trash2, WifiOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock, Star, Download, Trash2, WifiOff, Eye, EyeOff } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import LessonReviews from "@/components/LessonReviews";
 import { toast } from "sonner";
@@ -336,6 +336,24 @@ const LessonDetail = () => {
               </Card>
             ) : (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1 mb-3"
+                  onClick={() => {
+                    if (revealedAnswers.size === questions.length) {
+                      setRevealedAnswers(new Set());
+                    } else {
+                      setRevealedAnswers(new Set(questions.map((q) => q.id)));
+                    }
+                  }}
+                >
+                  {revealedAnswers.size === questions.length ? (
+                    <><EyeOff className="w-4 h-4" /> إخفاء جميع الإجابات</>
+                  ) : (
+                    <><Eye className="w-4 h-4" /> إظهار جميع الإجابات</>
+                  )}
+                </Button>
                 {questions.map((q, i) => {
                   const isRevealed = revealedAnswers.has(q.id);
 
