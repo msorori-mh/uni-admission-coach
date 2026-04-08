@@ -102,6 +102,7 @@ const Login = () => {
       } else {
         toast({ title: "تم الإرسال", description: "تم إرسال رمز التحقق إلى جوالك" });
         setPhoneStep("otp");
+        setResendCountdown(60);
       }
     } catch {
       toast({ variant: "destructive", title: "خطأ", description: "حدث خطأ غير متوقع" });
