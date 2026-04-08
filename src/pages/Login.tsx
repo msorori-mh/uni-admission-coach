@@ -166,8 +166,8 @@ const Login = () => {
 
         <Card className="shadow-2xl border-0">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl">تسجيل الدخول</CardTitle>
-            <CardDescription>اختر طريقة الدخول المناسبة لك</CardDescription>
+            <CardTitle className="text-xl">أهلاً بك في مُفَاضَلَة</CardTitle>
+            <CardDescription>سجّل دخولك أو أنشئ حساباً جديداً</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {phoneStep === "idle" && (
