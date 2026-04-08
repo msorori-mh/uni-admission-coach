@@ -10,6 +10,7 @@ interface SubscriptionStatus {
   expiresAt: string | null;
   planId: string | null;
   planSlug: string | null;
+  allowedMajorIds: string[] | null;
   loading: boolean;
 }
 
@@ -17,7 +18,7 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
   const [status, setStatus] = useState<SubscriptionStatus>({
     hasSubscription: false, isActive: false, isPending: false,
     isTrial: false, trialEndsAt: null,
-    expiresAt: null, planId: null, planSlug: null, loading: true,
+    expiresAt: null, planId: null, planSlug: null, allowedMajorIds: null, loading: true,
   });
 
   useEffect(() => {
@@ -41,13 +42,17 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
       const isTrial = sub.status === "trial" && !!sub.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
 
       let planSlug: string | null = null;
+      let allowedMajorIds: string[] | null = null;
       if (sub.plan_id) {
         const { data: plan } = await supabase
           .from("subscription_plans")
-          .select("slug")
+          .select("slug, allowed_major_ids")
           .eq("id", sub.plan_id)
           .single();
-        if (plan) planSlug = plan.slug;
+        if (plan) {
+          planSlug = plan.slug;
+          allowedMajorIds = plan.allowed_major_ids;
+        }
       }
 
       setStatus({
@@ -59,6 +64,7 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
         expiresAt: sub.expires_at,
         planId: sub.plan_id,
         planSlug,
+        allowedMajorIds,
         loading: false,
       });
     };

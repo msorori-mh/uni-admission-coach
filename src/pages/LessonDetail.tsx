@@ -40,8 +40,8 @@ const LessonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading, isStaff } = useAuth();
   const navigate = useNavigate();
-  const { isActive: hasActiveSubscription, loading: subLoading, planId } = useSubscription(user?.id);
-  const [planCoversLesson, setPlanCoversLesson] = useState(true);
+  const { isActive: hasActiveSubscription, loading: subLoading, planId, allowedMajorIds } = useSubscription(user?.id);
+  const [planCoversLesson, setPlanCoversLesson] = useState(false);
   const isOffline = useOfflineStatus();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -84,16 +84,15 @@ const LessonDetail = () => {
       if (l) {
         setLesson(l as Lesson);
         // Check if the subscription plan covers this lesson's major
-        if (planId && l.major_id) {
-          const { data: plan } = await supabase
-            .from("subscription_plans")
-            .select("allowed_major_ids")
-            .eq("id", planId)
-            .maybeSingle();
-          if (plan && plan.allowed_major_ids && plan.allowed_major_ids.length > 0) {
-            setPlanCoversLesson(plan.allowed_major_ids.includes(l.major_id));
+        if (planId) {
+          if (!allowedMajorIds || allowedMajorIds.length === 0) {
+            // Plan covers all majors
+            setPlanCoversLesson(true);
+          } else {
+            setPlanCoversLesson(allowedMajorIds.includes(l.major_id));
           }
         }
+        // If no planId (e.g. trial without plan), planCoversLesson stays false
         // Fetch sibling lessons for prev/next navigation
         if (l.major_id) {
           const { data: siblings } = await supabase
@@ -123,7 +122,7 @@ const LessonDetail = () => {
       setLoading(false);
     };
     fetchData();
-  }, [authLoading, id, user, isOffline, planId]);
+  }, [authLoading, id, user, isOffline, planId, allowedMajorIds]);
 
   const handleSaveOffline = async () => {
     if (!lesson || !id) return;
