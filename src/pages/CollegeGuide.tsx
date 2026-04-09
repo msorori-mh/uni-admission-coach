@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   GraduationCap, ChevronLeft, Loader2, Search, MapPin, FileText,
-  Calendar, TrendingUp, Star,
+  Calendar, TrendingUp, Star, Download,
 } from "lucide-react";
 
 const CollegeGuide = () => {
@@ -42,6 +42,51 @@ const CollegeGuide = () => {
     );
 
   const getUniName = (id: string) => universities.find((u) => u.id === id)?.name_ar || "";
+
+  const exportGuideAsPDF = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+
+    // Group filtered colleges by university
+    const grouped: Record<string, { uniName: string; colleges: any[] }> = {};
+    filtered.forEach((c) => {
+      const uniId = c.university_id;
+      if (!grouped[uniId]) grouped[uniId] = { uniName: getUniName(uniId), colleges: [] };
+      grouped[uniId].colleges.push(c);
+    });
+
+    const groupsHtml = Object.values(grouped).map((g) => {
+      const rows = g.colleges.map((c: any) =>
+        `<tr>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:right">${c.name_ar}</td>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:center">${c.min_gpa != null ? c.min_gpa + "%" : "—"}</td>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:center">${c.acceptance_rate != null ? c.acceptance_rate + "%" : "—"}</td>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:right">${c.registration_deadline || "—"}</td>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;font-size:11px">${c.required_documents?.join("، ") || "—"}</td>
+          <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;font-size:11px">${c.notes || "—"}</td>
+        </tr>`
+      ).join("");
+
+      return `<tr><td colspan="6" style="background:#e5e7eb;padding:8px;font-weight:bold;border:1px solid #ddd">${g.uniName}</td></tr>${rows}`;
+    }).join("");
+
+    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>دليل الكليات والمتطلبات</title>
+      <style>body{font-family:Arial,sans-serif;padding:24px;direction:rtl}h1{font-size:20px;margin-bottom:4px}
+      table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+      th{border:1px solid #ddd;padding:8px;background:#f3f4f6;text-align:right}
+      @media print{body{padding:0}}</style></head><body>
+      <h1>دليل الكليات والمتطلبات</h1>
+      <p style="color:#666;font-size:12px;margin-bottom:8px">${new Date().toLocaleDateString("ar")} — ${filtered.length} كلية</p>
+      <table>
+        <thead><tr>
+          <th>الكلية</th><th style="text-align:center">الحد الأدنى</th><th style="text-align:center">نسبة القبول</th>
+          <th>موعد التنسيق</th><th>الوثائق المطلوبة</th><th>ملاحظات</th>
+        </tr></thead>
+        <tbody>${groupsHtml}</tbody>
+      </table>
+      <script>setTimeout(()=>{window.print()},500)</script></body></html>`);
+    win.document.close();
+  };
 
   if (loading) {
     return (
@@ -95,6 +140,9 @@ const CollegeGuide = () => {
               <option key={u.id} value={u.id}>{u.name_ar}</option>
             ))}
           </select>
+          <Button variant="outline" size="sm" onClick={exportGuideAsPDF} className="h-10 gap-1.5">
+            <Download className="w-4 h-4" /> تصدير PDF
+          </Button>
         </div>
 
         <p className="text-sm text-muted-foreground">{filtered.length} كلية</p>
