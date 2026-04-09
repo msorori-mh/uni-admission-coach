@@ -160,8 +160,51 @@ const ExamSimulator = () => {
   }, []);
 
   const shuffleAndPick = (arr: Question[] | OfflineQuestion[], count: number) => {
-    const shuffled = [...arr].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count);
+    // Group by subject for proportional distribution
+    const bySubject = new Map<string, (Question | OfflineQuestion)[]>();
+    arr.forEach(q => {
+      const subj = (q as any).subject || "general";
+      if (!bySubject.has(subj)) bySubject.set(subj, []);
+      bySubject.get(subj)!.push(q);
+    });
+
+    // If only 1 subject or count >= total, just shuffle
+    if (bySubject.size <= 1 || count >= arr.length) {
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
+    }
+
+    // Proportional distribution
+    const subjects = [...bySubject.entries()];
+    const total = arr.length;
+    const result: (Question | OfflineQuestion)[] = [];
+    let remaining = count;
+
+    // Allocate proportionally, ensure at least 1 per subject
+    const allocations = subjects.map(([subj, qs]) => ({
+      subj,
+      qs: [...qs].sort(() => Math.random() - 0.5),
+      allocated: Math.max(1, Math.round((qs.length / total) * count)),
+    }));
+
+    // Adjust if total allocated exceeds count
+    let totalAllocated = allocations.reduce((s, a) => s + a.allocated, 0);
+    while (totalAllocated > count) {
+      const max = allocations.reduce((a, b) => a.allocated > b.allocated ? a : b);
+      max.allocated--;
+      totalAllocated--;
+    }
+    while (totalAllocated < count) {
+      const min = allocations.reduce((a, b) => a.allocated < a.qs.length && a.allocated < b.allocated ? a : b);
+      if (min.allocated < min.qs.length) { min.allocated++; totalAllocated++; }
+      else break;
+    }
+
+    allocations.forEach(a => {
+      result.push(...a.qs.slice(0, a.allocated));
+    });
+
+    return result.sort(() => Math.random() - 0.5);
   };
 
   const finishExam = useCallback(async (finalAnswers: Record<string, string>, questions: Question[]) => {
