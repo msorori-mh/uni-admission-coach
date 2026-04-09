@@ -213,7 +213,10 @@ const Subscription = () => {
     const { error: prErr } = await supabase.from("payment_requests").insert(paymentPayload);
 
     if (prErr) {
-      toast({ variant: "destructive", title: prErr.message });
+      const prMsg = prErr.message.includes("row-level security")
+        ? "ليس لديك صلاحية إرسال طلب الدفع. يرجى تسجيل الدخول مرة أخرى."
+        : `فشل إرسال طلب الدفع: ${prErr.message}`;
+      toast({ variant: "destructive", title: "خطأ في طلب الدفع", description: prMsg });
     } else {
       toast({ title: "تم إرسال طلب الدفع بنجاح!" });
       setSubscription({ id: newSub.id, status: "pending", plan_id: selectedPlan.id, starts_at: null, expires_at: null, trial_ends_at: null });
