@@ -720,7 +720,7 @@ const AdminContent = () => {
               <Card
                 key={l.id}
                 className={`cursor-pointer transition-shadow ${selectedLesson === l.id ? "ring-2 ring-primary" : ""} ${!l.is_published ? "opacity-60" : ""}`}
-                onClick={() => setSelectedLesson(selectedLesson === l.id ? null : l.id)}
+                onClick={() => { setSelectedLesson(selectedLesson === l.id ? null : l.id); setQuestionSubjectFilter("all"); }}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start justify-between">
