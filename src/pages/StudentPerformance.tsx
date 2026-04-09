@@ -175,32 +175,6 @@ const StudentPerformance = () => {
     return subjectStats;
   })();
 
-  const radarData = Object.entries(subjectPerformance)
-    .filter(([, v]) => v.total >= 1)
-    .map(([key, v]) => ({
-      subject: SUBJECT_LABELS[key] || key,
-      coverage: Math.round((v.correct / v.total) * 100),
-      fullMark: 100,
-    }));
-
-  // If no subject data from answers, fallback to lesson-based radar
-  const fallbackRadarData = radarData.length < 3 ? lessons.slice(0, 8).map((l) => {
-    const qCount = questions.filter((q) => q.lesson_id === l.id).length;
-    const isCompleted = completedLessonIds.has(l.id);
-    return {
-      subject: l.title.length > 10 ? l.title.slice(0, 8) + "…" : l.title,
-      coverage: isCompleted ? 100 : qCount > 0 ? 50 : 0,
-      fullMark: 100,
-    };
-  }) : radarData;
-
-  const finalRadarData = radarData.length >= 3 ? radarData : fallbackRadarData;
-
-  // Smart recommendations based on weakest subjects
-  const recommendations = Object.entries(subjectPerformance)
-    .filter(([, v]) => v.total >= 2)
-    .map(([key, v]) => ({ subject: key, label: SUBJECT_LABELS[key] || key, pct: Math.round((v.correct / v.total) * 100) }))
-    .sort((a, b) => a.pct - b.pct);
 
   // Performance level
   const getLevel = (avg: number) => {
