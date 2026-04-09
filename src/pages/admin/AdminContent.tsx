@@ -766,6 +766,27 @@ const AdminContent = () => {
                 </div>
               )}
             </div>
+            {selectedLesson && lessonSubjects.length > 1 && (
+              <div className="flex gap-1 flex-wrap">
+                <Badge
+                  variant={questionSubjectFilter === "all" ? "default" : "outline"}
+                  className="cursor-pointer text-[10px]"
+                  onClick={() => setQuestionSubjectFilter("all")}
+                >
+                  الكل ({allLessonQuestions.length})
+                </Badge>
+                {lessonSubjects.map((s) => (
+                  <Badge
+                    key={s}
+                    variant={questionSubjectFilter === s ? "default" : "outline"}
+                    className="cursor-pointer text-[10px]"
+                    onClick={() => setQuestionSubjectFilter(s)}
+                  >
+                    {getSubjectLabel(s)} ({allLessonQuestions.filter(q => q.subject === s).length})
+                  </Badge>
+                ))}
+              </div>
+            )}
             {!selectedLesson && <p className="text-sm text-muted-foreground py-8 text-center">اختر درساً لعرض أسئلته</p>}
             {selectedLesson && selectedLessonData && (
               <Card className="bg-muted/50">
