@@ -11,6 +11,31 @@ import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { resolveAuthDestination } from "@/lib/authRouting";
 
+const useWebOTP = (
+  active: boolean,
+  onCodeReceived: (code: string) => void
+) => {
+  useEffect(() => {
+    if (!active) return;
+    if (!("OTPCredential" in window)) return;
+
+    const ac = new AbortController();
+
+    (navigator.credentials as any)
+      .get({ otp: { transport: ["sms"] }, signal: ac.signal })
+      .then((otpCredential: any) => {
+        if (otpCredential?.code) {
+          onCodeReceived(otpCredential.code);
+        }
+      })
+      .catch(() => {
+        // User dismissed or unsupported — ignore
+      });
+
+    return () => ac.abort();
+  }, [active, onCodeReceived]);
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
