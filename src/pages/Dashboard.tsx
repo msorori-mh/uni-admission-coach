@@ -14,7 +14,7 @@ import WelcomeDialog from "@/components/WelcomeDialog";
 import {
   GraduationCap, LogOut, UserCircle, Bell, Shield, BookOpen,
   ClipboardCheck, Trophy, TrendingUp, Target, BarChart3, CreditCard, Search,
-  Building2,
+  Building2, ChevronLeft,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent
@@ -79,7 +79,6 @@ const Dashboard = () => {
     fetchData();
   }, [authLoading, user, navigate]);
 
-  // Realtime: update unread count when new notification arrives
   useRealtimeNotifications(user?.id);
 
   useEffect(() => {
@@ -93,6 +92,7 @@ const Dashboard = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -104,7 +104,6 @@ const Dashboard = () => {
       ? `${student.first_name || ""} ${student.fourth_name || ""}`.trim() || "طالب"
       : user?.user_metadata?.first_name || "طالب";
 
-  // Stats calculations
   const totalExams = attempts.length;
   const avgScore = totalExams > 0
     ? Math.round(attempts.reduce((sum, a) => sum + (a.score / a.total) * 100, 0) / totalExams)
@@ -116,13 +115,11 @@ const Dashboard = () => {
     ? Math.round((attempts[attempts.length - 1].score / attempts[attempts.length - 1].total) * 100)
     : 0;
 
-  // Chart data - last 10 attempts
   const chartData = attempts.slice(-10).map((a, i) => ({
     name: `${i + 1}`,
     score: Math.round((a.score / a.total) * 100),
   }));
 
-  // Score distribution
   const distribution = [
     { range: "0-40", count: 0, fill: "hsl(var(--destructive))" },
     { range: "41-60", count: 0, fill: "hsl(var(--warning))" },
@@ -137,12 +134,8 @@ const Dashboard = () => {
     else distribution[3].count++;
   });
 
-  const chartConfig = {
-    score: { label: "النتيجة %", color: "hsl(var(--primary))" },
-  };
-  const barConfig = {
-    count: { label: "عدد المحاولات", color: "hsl(var(--primary))" },
-  };
+  const chartConfig = { score: { label: "النتيجة %", color: "hsl(var(--primary))" } };
+  const barConfig = { count: { label: "عدد المحاولات", color: "hsl(var(--primary))" } };
 
   const statCards = [
     { label: "إجمالي الاختبارات", value: totalExams, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/10" },
@@ -169,7 +162,7 @@ const Dashboard = () => {
       {user && <WelcomeDialog userId={user.id} />}
       {/* Header */}
       <header className="gradient-primary text-white px-4 py-3 md:py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-6 h-6" />
             <span className="text-lg font-bold hidden sm:inline">مُفَاضَلَة</span>
@@ -188,200 +181,229 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-20 md:pb-6 space-y-6">
-        {/* Welcome */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">مرحباً، {userName}</h1>
-          {!isAdmin && (
-            <p className="text-muted-foreground">
-              {student?.gpa ? `معدلك: ${student.gpa}% • ابدأ التدريب على تخصصك الآن` : "أكمل ملفك الشخصي للبدء"}
-            </p>
-          )}
-        </div>
+      <main className="max-w-6xl mx-auto px-4 py-6 pb-20 md:pb-6">
+        <div className="grid md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr] gap-5">
+          {/* ===== Sidebar (right in RTL) ===== */}
+          <aside className="space-y-4 order-2 md:order-1">
+            {/* Welcome - desktop sidebar */}
+            <div className="hidden md:block">
+              <h1 className="text-lg font-bold text-foreground mb-0.5">مرحباً، {userName}</h1>
+              {!isAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  {student?.gpa ? `معدلك: ${student.gpa}%` : "أكمل ملفك الشخصي"}
+                </p>
+              )}
+            </div>
 
-        {/* Profile completion reminder */}
-        {!isAdmin && student && !student.major_id && (
-          <Card className="border-warning/50 bg-warning/5">
-            <CardContent className="flex items-center justify-between gap-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
-                  <UserCircle className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">أكمل بياناتك الأكاديمية</p>
-                  <p className="text-xs text-muted-foreground">اختر جامعتك وكليتك وتخصصك للحصول على تجربة مخصصة</p>
-                </div>
-              </div>
-              <Button size="sm" onClick={() => navigate("/complete-profile")} className="shrink-0">
-                إكمال
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Motivational Banner - only for students */}
-        {!isAdmin && <MotivationalBanner collegeName={collegeName} avgScore={avgScore} />}
-
-        {/* Stats Cards */}
-        {totalExams > 0 && (
-          <motion.div
-            className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4"
-            initial="hidden"
-            animate="visible"
-            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
-          >
-            {statCards.map((s) => (
-              <motion.div
-                key={s.label}
-                variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-              >
-                <Card className="relative overflow-hidden">
-                  <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center gap-0.5 sm:gap-1">
-                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${s.bg} flex items-center justify-center mb-0.5 sm:mb-1`}>
-                      <s.icon className={`w-4 h-4 ${s.color}`} />
+            {/* Nav list - desktop: compact vertical list */}
+            <nav className="hidden md:block">
+              <div className="space-y-0.5">
+                {navCards.map((card) => (
+                  <Link
+                    key={card.path}
+                    to={card.path}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-muted/60 transition-colors group"
+                  >
+                    <div className={`w-7 h-7 rounded-md ${card.bgColor} flex items-center justify-center shrink-0`}>
+                      <card.icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
                     </div>
-                    <span className="text-xl sm:text-2xl font-bold text-foreground">{s.value}</span>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground">{s.label}</span>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Lesson Progress */}
-        {lessonCount > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-secondary" />
-                تقدم الدروس
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">الدروس المكتملة</span>
-                <span className="font-semibold text-foreground">{completedLessons}/{lessonCount}</span>
-              </div>
-              <Progress value={lessonCount > 0 ? (completedLessons / lessonCount) * 100 : 0} className="h-3" />
-              <p className="text-xs text-muted-foreground">
-                {completedLessons === lessonCount && lessonCount > 0
-                  ? "🎉 أكملت جميع الدروس!"
-                  : `${lessonCount - completedLessons} درس متبقي`}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Performance Progress */}
-        {totalExams > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" />
-                مستوى الأداء
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">المعدل العام</span>
-                <span className="font-semibold text-foreground">{avgScore}%</span>
-              </div>
-              <Progress value={avgScore} className="h-3" />
-              <p className="text-xs text-muted-foreground">
-                {avgScore >= 80 ? "🎉 أداء ممتاز! واصل التميز" :
-                 avgScore >= 60 ? "👍 أداء جيد، يمكنك التحسن أكثر" :
-                 avgScore >= 40 ? "📚 تحتاج مراجعة إضافية" :
-                 "⚠️ ركّز على الدروس قبل إعادة الاختبار"}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Achievements */}
-        <AchievementsBadges stats={{ totalExams, avgScore, bestScore, completedLessons, totalLessons: lessonCount }} />
-
-        {/* Charts Row */}
-        {totalExams >= 2 && (
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-            {/* Score Trend */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">تطور النتائج</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                  <LineChart data={chartData}>
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: "hsl(var(--primary))" }}
-                    />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            {/* Score Distribution */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">توزيع الدرجات</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={barConfig} className="h-[200px] w-full">
-                  <BarChart data={distribution}>
-                    <XAxis dataKey="range" tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                      {distribution.map((entry, idx) => (
-                        <Bar key={idx} dataKey="count" fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Navigation Cards */}
-        <motion.div
-          className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3"
-          initial="hidden"
-          animate="visible"
-          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
-        >
-          {navCards.map((card) => (
-            <motion.div
-              key={card.path}
-              variants={{ hidden: { opacity: 0, scale: 0.85 }, visible: { opacity: 1, scale: 1 } }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link to={card.path} className="block">
-                <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border hover:shadow-md hover:border-primary/30 transition-shadow cursor-pointer text-center">
-                  <div className={`relative w-11 h-11 rounded-full ${card.bgColor} flex items-center justify-center`}>
-                    <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+                    <span className="text-sm text-foreground flex-1">{card.title}</span>
                     {card.badge ? (
-                      <span className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
                         {card.badge}
                       </span>
-                    ) : null}
-                  </div>
-                  <span className="text-xs font-medium text-foreground leading-tight line-clamp-2">{card.title}</span>
-                </div>
-              </Link>
+                    ) : (
+                      <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+
+            {/* Nav grid - mobile only */}
+            <motion.div
+              className="grid grid-cols-3 sm:grid-cols-4 gap-2 md:hidden"
+              initial="hidden"
+              animate="visible"
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
+            >
+              {navCards.map((card) => (
+                <motion.div
+                  key={card.path}
+                  variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
+                  transition={{ duration: 0.25 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link to={card.path} className="block">
+                    <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:shadow-sm transition-shadow text-center">
+                      <div className={`relative w-9 h-9 rounded-full ${card.bgColor} flex items-center justify-center`}>
+                        <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+                        {card.badge ? (
+                          <span className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                            {card.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="text-[10px] font-medium text-foreground leading-tight line-clamp-2">{card.title}</span>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
-        </motion.div>
+          </aside>
+
+          {/* ===== Main Content ===== */}
+          <div className="space-y-4 order-1 md:order-2">
+            {/* Welcome - mobile */}
+            <div className="md:hidden">
+              <h1 className="text-xl font-bold text-foreground mb-0.5">مرحباً، {userName}</h1>
+              {!isAdmin && (
+                <p className="text-sm text-muted-foreground">
+                  {student?.gpa ? `معدلك: ${student.gpa}% • ابدأ التدريب على تخصصك الآن` : "أكمل ملفك الشخصي للبدء"}
+                </p>
+              )}
+            </div>
+
+            {/* Profile completion reminder */}
+            {!isAdmin && student && !student.major_id && (
+              <Card className="border-warning/50 bg-warning/5">
+                <CardContent className="flex items-center justify-between gap-3 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                      <UserCircle className="w-4 h-4 text-warning" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-xs">أكمل بياناتك الأكاديمية</p>
+                      <p className="text-[10px] text-muted-foreground">اختر جامعتك وكليتك وتخصصك</p>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => navigate("/complete-profile")} className="shrink-0 text-xs h-7 px-3">
+                    إكمال
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Motivational Banner */}
+            {!isAdmin && <MotivationalBanner collegeName={collegeName} avgScore={avgScore} />}
+
+            {/* Stats Cards */}
+            {totalExams > 0 && (
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {statCards.map((s) => (
+                  <Card key={s.label} className="relative overflow-hidden">
+                    <CardContent className="p-2.5 sm:p-3 flex flex-col items-center text-center gap-0.5">
+                      <div className={`w-7 h-7 rounded-md ${s.bg} flex items-center justify-center mb-0.5`}>
+                        <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+                      </div>
+                      <span className="text-lg sm:text-xl font-bold text-foreground">{s.value}</span>
+                      <span className="text-[10px] text-muted-foreground">{s.label}</span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Lesson Progress */}
+            {lessonCount > 0 && (
+              <Card>
+                <CardHeader className="pb-1.5 pt-3 px-4">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5 text-secondary" />
+                    تقدم الدروس
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 px-4 pb-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">الدروس المكتملة</span>
+                    <span className="font-semibold text-foreground">{completedLessons}/{lessonCount}</span>
+                  </div>
+                  <Progress value={lessonCount > 0 ? (completedLessons / lessonCount) * 100 : 0} className="h-2.5" />
+                  <p className="text-[10px] text-muted-foreground">
+                    {completedLessons === lessonCount && lessonCount > 0
+                      ? "🎉 أكملت جميع الدروس!"
+                      : `${lessonCount - completedLessons} درس متبقي`}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Performance Progress */}
+            {totalExams > 0 && (
+              <Card>
+                <CardHeader className="pb-1.5 pt-3 px-4">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    مستوى الأداء
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 px-4 pb-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">المعدل العام</span>
+                    <span className="font-semibold text-foreground">{avgScore}%</span>
+                  </div>
+                  <Progress value={avgScore} className="h-2.5" />
+                  <p className="text-[10px] text-muted-foreground">
+                    {avgScore >= 80 ? "🎉 أداء ممتاز! واصل التميز" :
+                     avgScore >= 60 ? "👍 أداء جيد، يمكنك التحسن أكثر" :
+                     avgScore >= 40 ? "📚 تحتاج مراجعة إضافية" :
+                     "⚠️ ركّز على الدروس قبل إعادة الاختبار"}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Achievements */}
+            <AchievementsBadges stats={{ totalExams, avgScore, bestScore, completedLessons, totalLessons: lessonCount }} />
+
+            {/* Charts Row */}
+            {totalExams >= 2 && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-1.5 pt-3 px-4">
+                    <CardTitle className="text-xs">تطور النتائج</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-2 pb-3">
+                    <ChartContainer config={chartConfig} className="h-[180px] w-full">
+                      <LineChart data={chartData}>
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                          type="monotone"
+                          dataKey="score"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-1.5 pt-3 px-4">
+                    <CardTitle className="text-xs">توزيع الدرجات</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-2 pb-3">
+                    <ChartContainer config={barConfig} className="h-[180px] w-full">
+                      <BarChart data={distribution}>
+                        <XAxis dataKey="range" tick={{ fontSize: 11 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                          {distribution.map((entry, idx) => (
+                            <Bar key={idx} dataKey="count" fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );
