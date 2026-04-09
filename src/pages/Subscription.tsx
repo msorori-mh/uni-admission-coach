@@ -145,7 +145,12 @@ const Subscription = () => {
       user_id: user.id, status: "active", plan_id: plan.id,
     });
     if (error) {
-      toast({ variant: "destructive", title: error.message });
+      const msg = error.message.includes("row-level security")
+        ? "ليس لديك صلاحية لتفعيل هذه الخطة. يرجى تسجيل الدخول مرة أخرى."
+        : error.message.includes("duplicate")
+        ? "لديك اشتراك مفعّل بالفعل في هذه الخطة."
+        : `فشل تفعيل الخطة: ${error.message}`;
+      toast({ variant: "destructive", title: "خطأ في الاشتراك", description: msg });
     } else {
       toast({ title: "تم تفعيل الخطة المجانية!" });
       setSubscription({ id: "", status: "active", plan_id: plan.id, starts_at: null, expires_at: null, trial_ends_at: null });
@@ -166,7 +171,14 @@ const Subscription = () => {
     const filePath = `${user.id}/${Date.now()}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from("receipts").upload(filePath, receiptFile);
     if (uploadErr) {
-      toast({ variant: "destructive", title: "فشل رفع السند: " + uploadErr.message });
+      const uploadMsg = uploadErr.message.includes("Payload too large")
+        ? "حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت."
+        : uploadErr.message.includes("mime")
+        ? "نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG) أو PDF."
+        : uploadErr.message.includes("row-level security") || uploadErr.message.includes("security")
+        ? "ليس لديك صلاحية رفع الملف. يرجى تسجيل الدخول مرة أخرى."
+        : `فشل رفع السند: ${uploadErr.message}`;
+      toast({ variant: "destructive", title: "خطأ في رفع السند", description: uploadMsg });
       setSubmitting(false);
       return;
     }
@@ -179,7 +191,10 @@ const Subscription = () => {
     }).select().single();
 
     if (subErr) {
-      toast({ variant: "destructive", title: subErr.message });
+      const subMsg = subErr.message.includes("row-level security")
+        ? "ليس لديك صلاحية إنشاء اشتراك. يرجى تسجيل الدخول مرة أخرى."
+        : `فشل إنشاء الاشتراك: ${subErr.message}`;
+      toast({ variant: "destructive", title: "خطأ في الاشتراك", description: subMsg });
       setSubmitting(false);
       return;
     }
@@ -198,7 +213,10 @@ const Subscription = () => {
     const { error: prErr } = await supabase.from("payment_requests").insert(paymentPayload);
 
     if (prErr) {
-      toast({ variant: "destructive", title: prErr.message });
+      const prMsg = prErr.message.includes("row-level security")
+        ? "ليس لديك صلاحية إرسال طلب الدفع. يرجى تسجيل الدخول مرة أخرى."
+        : `فشل إرسال طلب الدفع: ${prErr.message}`;
+      toast({ variant: "destructive", title: "خطأ في طلب الدفع", description: prMsg });
     } else {
       toast({ title: "تم إرسال طلب الدفع بنجاح!" });
       setSubscription({ id: newSub.id, status: "pending", plan_id: selectedPlan.id, starts_at: null, expires_at: null, trial_ends_at: null });
