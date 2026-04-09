@@ -140,6 +140,9 @@ const CollegeGuide = () => {
               <option key={u.id} value={u.id}>{u.name_ar}</option>
             ))}
           </select>
+          <Button variant="outline" size="sm" onClick={exportGuideAsPDF} className="h-10 gap-1.5">
+            <Download className="w-4 h-4" /> تصدير PDF
+          </Button>
         </div>
 
         <p className="text-sm text-muted-foreground">{filtered.length} كلية</p>
