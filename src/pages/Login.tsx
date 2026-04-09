@@ -54,6 +54,13 @@ const Login = () => {
     return 0;
   });
 
+  // Auto-fill OTP from SMS via WebOTP API
+  const handleWebOTPCode = useCallback((code: string) => {
+    setOtpCode(code);
+  }, []);
+
+  useWebOTP(phoneStep === "otp", handleWebOTPCode);
+
   // Countdown timer for resend — persist to sessionStorage
   useEffect(() => {
     if (resendCountdown <= 0) {
