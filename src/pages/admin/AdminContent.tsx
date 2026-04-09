@@ -811,8 +811,15 @@ const AdminContent = () => {
                 </CardContent>
               </Card>
             )}
+            {selectedLesson && (questionSearchQuery || questionSubjectFilter !== "all") && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                عرض {lessonQuestions.length} من {allLessonQuestions.length} سؤال
+              </p>
+            )}
             {lessonQuestions.length === 0 && selectedLesson && (
-              <p className="text-sm text-muted-foreground py-4 text-center">لا توجد أسئلة لهذا الدرس</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                {questionSearchQuery || questionSubjectFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد أسئلة لهذا الدرس"}
+              </p>
             )}
             {lessonQuestions.map((q, i) => (
               <Card key={q.id}>
