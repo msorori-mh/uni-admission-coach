@@ -205,8 +205,11 @@ const Dashboard = () => {
                   <Link
                     key={card.path}
                     to={card.path}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group ${isActive ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/60"}`}
+                    className={`relative flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group ${isActive ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/60"}`}
                   >
+                    {isActive && (
+                      <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-l-full bg-primary" />
+                    )}
                     <div className={`w-7 h-7 rounded-md ${card.bgColor} flex items-center justify-center shrink-0`}>
                       <card.icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
                     </div>
