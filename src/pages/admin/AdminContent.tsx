@@ -334,7 +334,7 @@ const AdminContent = () => {
               option_d: String(row[4] || ""),
               correct_option: String(row[5] || "a").toLowerCase().trim(),
               explanation: row[6] ? String(row[6]) : "",
-              subject: "general",
+              subject: row[7] ? getSubjectValue(String(row[7])) : "general",
             });
           }
           setPendingQuestions(prev => [...prev, ...newPending]);
