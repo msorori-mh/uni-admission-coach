@@ -385,6 +385,7 @@ const AdminContent = () => {
       content: lessonContent,
       summary: lessonSummary,
       major_id: lessonMajorId,
+      subject_id: lessonSubjectId || null,
       display_order: lessonOrder,
       is_published: lessonPublished,
       is_free: lessonFree,
