@@ -115,7 +115,7 @@ const ExamSimulator = () => {
 
       const [{ data: major }, { data: qs }, { data: attempts }] = await Promise.all([
         supabase.from("majors").select("name_ar").eq("id", s.major_id).maybeSingle(),
-        supabase.from("questions").select("id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, lesson_id")
+        supabase.from("questions").select("id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, lesson_id, subject")
           .order("display_order"),
         supabase.from("exam_attempts").select("*").eq("student_id", s.id).order("created_at", { ascending: false }),
       ]);
@@ -125,9 +125,15 @@ const ExamSimulator = () => {
 
       if (qs) {
         const { data: lessons } = await supabase.from("lessons")
-          .select("id").eq("major_id", s.major_id).eq("is_published", true);
+          .select("id, subject_id").eq("major_id", s.major_id).eq("is_published", true);
         const lessonIds = new Set((lessons || []).map((l: any) => l.id));
-        const filtered = (qs as any[]).filter((q) => lessonIds.has(q.lesson_id));
+        // Map lesson_id to subject_id for enriching questions
+        const lessonSubjectMap = new Map<string, string>();
+        (lessons || []).forEach((l: any) => { if (l.subject_id) lessonSubjectMap.set(l.id, l.subject_id); });
+        const filtered = (qs as any[]).filter((q) => lessonIds.has(q.lesson_id)).map(q => ({
+          ...q,
+          subject: q.subject || lessonSubjectMap.get(q.lesson_id) || undefined,
+        }));
         setAllQuestions(filtered as Question[]);
       }
 
