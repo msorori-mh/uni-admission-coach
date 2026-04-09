@@ -231,6 +231,7 @@ const AdminContent = () => {
     setLessonOrder(filteredLessons.length);
     setLessonPublished(false);
     setLessonFree(false);
+    setLessonSubjectId("");
     setPendingQuestions([]);
     setExistingLessonQuestions([]);
     setShowAddQuestionForm(false);
@@ -248,6 +249,7 @@ const AdminContent = () => {
     setLessonOrder(l.display_order);
     setLessonPublished(l.is_published);
     setLessonFree(l.is_free);
+    setLessonSubjectId(l.subject_id || "");
     setPendingQuestions([]);
     setExistingLessonQuestions(questions.filter(q => q.lesson_id === l.id));
     setShowAddQuestionForm(false);
