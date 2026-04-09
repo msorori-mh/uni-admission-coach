@@ -669,8 +669,10 @@ const AdminContent = () => {
 
   if (authLoading || loading || scopeLoading) return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
 
-  const lessonQuestions = selectedLesson ? questions.filter((q) => q.lesson_id === selectedLesson) : [];
+  const allLessonQuestions = selectedLesson ? questions.filter((q) => q.lesson_id === selectedLesson) : [];
+  const lessonQuestions = questionSubjectFilter === "all" ? allLessonQuestions : allLessonQuestions.filter((q) => q.subject === questionSubjectFilter);
   const selectedLessonData = selectedLesson ? lessons.find((l) => l.id === selectedLesson) : null;
+  const lessonSubjects = [...new Set(allLessonQuestions.map(q => q.subject || "general"))];
 
   const totalQuestionsInDialog = existingLessonQuestions.length + pendingQuestions.length;
 
