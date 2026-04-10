@@ -15,7 +15,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#f59e0b", "#10b981"];
 const tooltipStyle = { backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", color: "hsl(var(--foreground))", fontSize: "12px" };
-const ZONE_A = ["صنعاء", "أمانة العاصمة", "عمران", "ذمار", "إب", "الحديدة", "صعدة", "حجة", "المحويت", "ريمة", "تعز"];
+const ZONE_A = ["صنعاء", "أمانة العاصمة", "عمران", "ذمار", "إب", "الحديدة", "صعدة", "حجة", "المحويت", "ريمة"];
 
 interface PaymentRow { id: string; amount: number; currency: string; status: string; created_at: string; user_id: string; }
 
