@@ -1,33 +1,49 @@
 
 
-## خطة: إيقاف عرض التخصص مؤقتاً للطالب
+## خطة تجهيز التطبيق للعمل كتطبيق APK على الجوال
 
-### الملخص
-إخفاء حقل اختيار التخصص من واجهات الطالب (إكمال الملف الشخصي، الملف الشخصي، لوحة التحكم)، بحيث يختار الطالب فقط الجامعة والكلية. التخصص يبقى في قاعدة البيانات ويمكن تفعيله لاحقاً.
+التطبيق لديه بالفعل إعداد Capacitor أساسي. الخطة تركز على إضافة ما ينقص لضمان تجربة أصلية بدون مشاكل.
 
-### التعديلات
+---
 
-**1. صفحة إكمال الملف الشخصي (`src/pages/CompleteProfile.tsx`):**
-- إزالة حقل اختيار التخصص من الخطوة 2
-- إزالة تحميل التخصصات (useEffect الخاص بالمجورز)
-- تغيير شرط التفعيل من `!majorId` إلى `!collegeId` في زر الحفظ
-- تغيير فحص اكتمال الملف من `student?.major_id` إلى `student?.college_id`
-- إرسال `major_id: null` عند الحفظ
+### ما هو جاهز بالفعل
+- Capacitor مُعَدّ مع `capacitor.config.ts`
+- حزم `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`, `@capacitor/splash-screen` مثبتة
+- شريط التنقل السفلي للجوال موجود
+- دعم Safe Area موجود في CSS
 
-**2. صفحة الملف الشخصي (`src/pages/StudentProfile.tsx`):**
-- إخفاء حقل اختيار التخصص
-- تعديل الوصف من "الجامعة والكلية والتخصص" إلى "الجامعة والكلية"
+### ما سيتم إضافته
 
-**3. لوحة التحكم (`src/pages/Dashboard.tsx`):**
-- تغيير تنبيه إكمال الملف من `!student.major_id` إلى `!student.college_id`
-- تعديل استعلام الدروس ليعتمد على `college_id` بدلاً من `major_id`
+#### 1. إضافة مكتبة Status Bar
+تثبيت `@capacitor/status-bar` لتنسيق شريط الحالة العلوي مع ألوان التطبيق (أزرق داكن `#1A237E`) وتعيين النص الأبيض.
 
-**4. توجيه المصادقة (`src/lib/authRouting.ts`):**
-- تغيير الفحص من `student?.major_id` إلى `student?.college_id`
+#### 2. إنشاء ملف تهيئة Capacitor المركزي
+إنشاء `src/lib/capacitor.ts` يحتوي على:
+- ضبط لون Status Bar عند تشغيل التطبيق كتطبيق أصلي
+- إخفاء Splash Screen بعد تحميل التطبيق
+- كشف ما إذا كان التطبيق يعمل في بيئة أصلية (native)
 
-### الملفات المتأثرة
-- `src/pages/CompleteProfile.tsx`
-- `src/pages/StudentProfile.tsx`
-- `src/pages/Dashboard.tsx`
-- `src/lib/authRouting.ts`
+#### 3. تفعيل التهيئة في `App.tsx`
+استدعاء دالة التهيئة عند بدء التطبيق داخل `useEffect`.
+
+#### 4. إخفاء مكوّن InstallAppPrompt في البيئة الأصلية
+عند تشغيل التطبيق كـ APK، لا حاجة لعرض رسالة "ثبّت التطبيق" - سيتم إخفاؤها تلقائياً.
+
+#### 5. تحسينات CSS للتطبيق الأصلي
+- إضافة `padding-top` لـ Safe Area العلوية (status bar) لتجنب تداخل المحتوى
+- التأكد من أن جميع العناصر الثابتة (bottom nav, overlays) تحترم مناطق الأمان
+
+#### 6. تحديث `capacitor.config.ts`
+إضافة إعدادات إضافية مثل:
+- `backgroundColor` للتطبيق
+- إعدادات Android للتعامل مع الروابط و keyboard
+
+---
+
+### ما يحتاج المستخدم فعله بعد التنفيذ
+1. نقل المشروع إلى GitHub عبر زر "Export to Github"
+2. `git pull` ثم `npm install`
+3. `npx cap add android`
+4. `npm run build && npx cap sync`
+5. `npx cap run android` لتشغيل التطبيق على جهاز أو محاكي
 
