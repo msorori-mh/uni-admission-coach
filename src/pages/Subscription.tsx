@@ -422,7 +422,7 @@ const Subscription = () => {
         {step === "method" && selectedPlan && (
           <div className="space-y-3">
             <Button variant="ghost" size="sm" onClick={() => { setStep("plans"); setSelectedPlan(null); }} className="mb-1">
-              <ChevronRight className="w-4 h-4 ml-1" /> العودة للخطط
+              <ChevronRight className="w-4 h-4 ml-1" /> العودة
             </Button>
 
             <Card className="bg-primary/5 border-primary/20">
