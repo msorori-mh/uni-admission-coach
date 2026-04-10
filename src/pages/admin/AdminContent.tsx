@@ -99,7 +99,6 @@ const AdminContent = () => {
   // Filters
   const [filterUni, setFilterUni] = useState("");
   const [filterCollege, setFilterCollege] = useState("");
-  const [filterMajor, setFilterMajor] = useState("");
 
   // Lesson dialog
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -108,6 +107,8 @@ const AdminContent = () => {
   const [lessonContent, setLessonContent] = useState("");
   const [lessonSummary, setLessonSummary] = useState("");
   const [lessonMajorId, setLessonMajorId] = useState("");
+  const [lessonUniId, setLessonUniId] = useState("");
+  const [lessonCollegeId, setLessonCollegeId] = useState("");
   const [lessonOrder, setLessonOrder] = useState(0);
   const [lessonPublished, setLessonPublished] = useState(false);
   const [lessonFree, setLessonFree] = useState(false);
@@ -198,26 +199,20 @@ const AdminContent = () => {
 
   // Apply scope filtering
   const allowedMajorIds = getAllowedMajorIds();
-  const scopedLessons = allowedMajorIds ? lessons.filter((l) => allowedMajorIds.has(l.major_id)) : lessons;
-  const scopedMajors = allowedMajorIds ? majors.filter((m: any) => allowedMajorIds.has(m.id)) : majors;
   const scopedCollegeIds = new Set(scopedMajors.map((m: any) => m.college_id));
   const scopedColleges = allowedMajorIds ? colleges.filter((c: any) => scopedCollegeIds.has(c.id)) : colleges;
   const scopedUniIds = new Set(scopedColleges.map((c: any) => c.university_id));
   const scopedUniversities = allowedMajorIds ? universities.filter((u: any) => scopedUniIds.has(u.id)) : universities;
 
   const filteredColleges = filterUni ? scopedColleges.filter((c: any) => c.university_id === filterUni) : scopedColleges;
-  const filteredMajors = filterCollege ? scopedMajors.filter((m: any) => m.college_id === filterCollege) : (filterUni ? scopedMajors.filter((m: any) => filteredColleges.some((c: any) => c.id === m.college_id)) : scopedMajors);
   
   const filteredLessons = (() => {
-    if (filterMajor) return scopedLessons.filter((l) => l.major_id === filterMajor);
     if (filterCollege) {
-      const collegeMajorIds = scopedMajors.filter((m: any) => m.college_id === filterCollege).map((m: any) => m.id);
-      return scopedLessons.filter((l) => collegeMajorIds.includes(l.major_id));
+      return scopedLessons.filter((l) => l.college_id === filterCollege);
     }
     if (filterUni) {
       const uniCollegeIds = scopedColleges.filter((c: any) => c.university_id === filterUni).map((c: any) => c.id);
-      const uniMajorIds = scopedMajors.filter((m: any) => uniCollegeIds.includes(m.college_id)).map((m: any) => m.id);
-      return scopedLessons.filter((l) => uniMajorIds.includes(l.major_id));
+      return scopedLessons.filter((l) => l.college_id && uniCollegeIds.includes(l.college_id));
     }
     return scopedLessons;
   })();
