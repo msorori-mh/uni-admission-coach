@@ -17,7 +17,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const ZONE_A_GOVERNORATES = [
   "صنعاء", "أمانة العاصمة", "عمران", "ذمار", "إب", "الحديدة",
-  "صعدة", "حجة", "المحويت", "ريمة", "تعز",
+  "صعدة", "حجة", "المحويت", "ريمة",
 ];
 
 interface Plan {
@@ -342,86 +342,87 @@ const Subscription = () => {
           </Card>
         )}
 
-        {/* Plans selection */}
-        {step === "plans" && !isActive && !isPending && (
-          <div className="space-y-4">
-            <div className="text-center">
-              <h2 className="text-xl font-bold">اختر خطة الاشتراك</h2>
-              {zoneName && <p className="text-xs text-muted-foreground mt-1">{zoneName} — {studentGovernorate}</p>}
-            </div>
+        {/* Single plan subscription */}
+        {step === "plans" && !isActive && !isPending && (() => {
+          const plan = plans[0];
+          if (!plan) return <p className="text-center text-muted-foreground py-8">لا توجد خطط اشتراك متاحة حالياً</p>;
+          
+          if (!studentGovernorate) {
+            return (
+              <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900">
+                <CardContent className="py-6 text-center space-y-3">
+                  <GraduationCap className="w-10 h-10 text-yellow-600 mx-auto" />
+                  <h2 className="text-lg font-bold text-yellow-700 dark:text-yellow-400">يرجى إكمال بياناتك الشخصية أولاً</h2>
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500">نحتاج لمعرفة محافظتك لتحديد سعر الاشتراك المناسب</p>
+                  <Button onClick={() => navigate("/complete-profile")} className="mt-2">إكمال البيانات الشخصية</Button>
+                </CardContent>
+              </Card>
+            );
+          }
 
-            <div className="grid gap-3">
-              {plans.map((plan) => {
-                const price = getPlanPrice(plan, studentGovernorate);
-                const isVip = plan.slug === "vip";
-                return (
-                  <Card
-                    key={plan.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${isVip ? "border-primary ring-2 ring-primary/20" : "hover:border-primary"}`}
-                    onClick={() => handleSelectPlan(plan)}
-                  >
-                    <CardContent className="py-4 px-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-sm">{plan.name}</h3>
-                            {isVip && <Badge className="bg-primary text-primary-foreground text-[10px]"><Sparkles className="w-3 h-3 ml-1" />الأفضل</Badge>}
-                            {plan.is_free && <Badge variant="secondary" className="text-[10px]">مجاني</Badge>}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {(plan.features || []).map((f, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <Star className="w-3 h-3 text-primary" />{f}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-left shrink-0">
-                          {plan.is_free ? (
-                            <span className="text-lg font-bold text-green-600">مجاني</span>
-                          ) : (
-                            <div>
-                              <span className="text-lg font-bold text-primary">{price.toLocaleString()}</span>
-                              <span className="text-xs text-muted-foreground block">{plan.currency}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+          const price = getPlanPrice(plan, studentGovernorate);
+          const finalPrice = promoDiscount > 0 ? Math.round(price * (1 - promoDiscount / 100)) : price;
 
-            {/* Promo code */}
-            <Card>
-              <CardContent className="py-3 px-4">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <Input
-                    placeholder="كود الخصم"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                    className="text-sm h-8"
-                  />
-                  <Button size="sm" variant="outline" onClick={applyPromo} disabled={promoLoading || !promoCode.trim()} className="shrink-0 h-8">
-                    {promoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "تطبيق"}
-                  </Button>
-                </div>
-                {promoDiscount > 0 && (
-                  <p className="text-xs text-green-600 mt-1 mr-6">خصم {promoDiscount}% مُطبّق ✓</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          return (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-xl font-bold">الاشتراك في المنصة</h2>
+                {zoneName && <p className="text-xs text-muted-foreground mt-1">{zoneName} — {studentGovernorate}</p>}
+              </div>
+
+              <Card className="border-primary ring-2 ring-primary/20">
+                <CardContent className="py-5 px-4">
+                  <div className="text-center space-y-3">
+                    <h3 className="font-bold text-lg">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                    <div>
+                      {promoDiscount > 0 && <span className="text-sm text-muted-foreground line-through ml-2">{price.toLocaleString()}</span>}
+                      <span className="text-2xl font-bold text-primary">{finalPrice.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground mr-1">{plan.currency}</span>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2 mt-2">
+                      {(plan.features || []).map((f, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Star className="w-3 h-3 text-primary" />{f}
+                        </span>
+                      ))}
+                    </div>
+                    <Button className="w-full mt-3" onClick={() => handleSelectPlan(plan)}>
+                      <Sparkles className="w-4 h-4 ml-1" /> اشترك الآن
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Promo code */}
+              <Card>
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <Input
+                      placeholder="كود الخصم"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      className="text-sm h-8"
+                    />
+                    <Button size="sm" variant="outline" onClick={applyPromo} disabled={promoLoading || !promoCode.trim()} className="shrink-0 h-8">
+                      {promoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "تطبيق"}
+                    </Button>
+                  </div>
+                  {promoDiscount > 0 && (
+                    <p className="text-xs text-green-600 mt-1 mr-6">خصم {promoDiscount}% مُطبّق ✓</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })()}
 
         {/* Payment method selection */}
         {step === "method" && selectedPlan && (
           <div className="space-y-3">
             <Button variant="ghost" size="sm" onClick={() => { setStep("plans"); setSelectedPlan(null); }} className="mb-1">
-              <ChevronRight className="w-4 h-4 ml-1" /> العودة للخطط
+              <ChevronRight className="w-4 h-4 ml-1" /> العودة
             </Button>
 
             <Card className="bg-primary/5 border-primary/20">
