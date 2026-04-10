@@ -1,43 +1,56 @@
 
 
-## إعداد أيقونة التطبيق وشاشة البداية باحترافية
+## توقيع ملف APK للنشر على Google Play Store
 
-### الوضع الحالي
-- يوجد شعار التطبيق في `src/assets/logo.png` و `public/logo-original.png`
-- أيقونات Android الحالية موجودة في مجلدات `mipmap-*` (افتراضية من Capacitor)
-- شاشة البداية موجودة في `android/app/src/main/res/drawable/splash.png`
-
-### المشكلة
-ملفات الأيقونات وشاشة البداية الحالية هي الافتراضية من Capacitor وتحتاج استبدالها بشعار التطبيق الفعلي.
+هذه العملية تتم بالكامل على جهازك المحلي باستخدام Android Studio وأدوات Java. لا تحتاج تعديلات على الكود.
 
 ### الخطوات
 
-**1. توليد أيقونات التطبيق بجميع الأحجام**
-- استخدام شعار التطبيق (`src/assets/logo.png`) كأساس
-- توليد الأيقونات بالأحجام المطلوبة لكل مجلد:
-  - `mipmap-mdpi`: 48×48
-  - `mipmap-hdpi`: 72×72
-  - `mipmap-xhdpi`: 96×96
-  - `mipmap-xxhdpi`: 144×144
-  - `mipmap-xxxhdpi`: 192×192
-- توليد أيقونات الـ Adaptive Icon:
-  - `ic_launcher_foreground.png` (الشعار على خلفية شفافة، 432×432)
-  - `ic_launcher_background.png` (الخلفية بلون #1A237E)
+**1. إنشاء مفتاح التوقيع (Keystore)**
 
-**2. توليد شاشة البداية (Splash Screen)**
-- إنشاء صورة splash بخلفية #1A237E مع الشعار في المنتصف
-- توليد بأحجام مختلفة لمجلدات `drawable-*`:
-  - `drawable`: 480×800
-  - `drawable-hdpi`: 480×800
-  - `drawable-xhdpi`: 720×1280
-  - `drawable-xxhdpi`: 1080×1920
-  - نسخ landscape أيضاً
+افتح Terminal على جهازك ونفذ:
+```bash
+keytool -genkey -v -keystore mufadala-release.keystore -alias mufadala -keyalg RSA -keysize 2048 -validity 10000
+```
+سيطلب منك:
+- كلمة مرور للـ Keystore (احفظها جيداً)
+- اسمك، اسم المؤسسة، المدينة، الدولة
 
-**3. تحديث PWA icons**
-- تحديث `public/icon-192.png` و `public/icon-512.png` بنسخ عالية الجودة من الشعار
+> **مهم جداً**: احتفظ بنسخة احتياطية من ملف `mufadala-release.keystore` وكلمة المرور. فقدانهما يعني عدم القدرة على تحديث التطبيق مستقبلاً.
 
-### التفاصيل التقنية
-- سيتم استخدام Python (Pillow) لمعالجة الصور برمجياً
-- الألوان: خلفية #1A237E (أزرق داكن)، الشعار الأصلي محفوظ بالشفافية
-- جميع الملفات ستُنسخ مباشرة إلى مواقعها الصحيحة في المشروع
+**2. بناء APK موقّع من Android Studio**
+
+1. افتح المشروع في Android Studio (`npx cap open android`)
+2. اذهب إلى **Build → Generate Signed Bundle / APK**
+3. اختر **APK** (أو **Android App Bundle** وهو الأفضل لـ Google Play)
+4. اضغط **Next** واختر ملف الـ Keystore الذي أنشأته
+5. أدخل كلمة المرور والـ Alias
+6. اختر **release** كـ Build Variant
+7. اضغط **Finish**
+
+الملف الموقّع سيكون في:
+```
+android/app/release/app-release.apk
+```
+
+**3. النشر على Google Play (اختياري: App Bundle)**
+
+Google Play يفضل **AAB** (Android App Bundle) بدلاً من APK:
+- في الخطوة 3 أعلاه، اختر **Android App Bundle** بدلاً من APK
+- الملف سيكون `app-release.aab`
+
+**4. رفع التطبيق على Google Play Console**
+
+1. أنشئ حساب مطور على [Google Play Console](https://play.google.com/console) (رسوم تسجيل $25 مرة واحدة)
+2. أنشئ تطبيق جديد واملأ بيانات التطبيق (الاسم، الوصف، لقطات الشاشة، الأيقونة)
+3. اذهب إلى **Release → Production → Create new release**
+4. ارفع ملف AAB أو APK الموقّع
+5. أكمل متطلبات المتجر (سياسة الخصوصية، تصنيف المحتوى، إلخ)
+6. أرسل للمراجعة
+
+### ملاحظات مهمة
+
+- **Google Play App Signing**: عند رفع أول إصدار، يمكنك تفعيل "Google Play App Signing" ليقوم Google بإدارة مفتاح التوقيع النهائي (موصى به)
+- **الحد الأدنى لـ targetSdkVersion**: Google Play يتطلب حالياً API 34 كحد أدنى
+- **سياسة الخصوصية**: مطلوبة إذا كان التطبيق يجمع بيانات المستخدمين
 
