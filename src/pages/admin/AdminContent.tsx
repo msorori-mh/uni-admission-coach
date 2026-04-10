@@ -600,6 +600,27 @@ const AdminContent = () => {
     if (questionFileInputRef.current) questionFileInputRef.current.value = "";
   };
 
+  // --- Export existing lessons ---
+  const exportLessons = () => {
+    const collegeLessons = filteredLessons;
+    if (collegeLessons.length === 0) {
+      toast({ variant: "destructive", title: "لا توجد دروس للتصدير" });
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+    const header = ["عنوان الدرس", "المحتوى", "الملخص", "ترتيب العرض", "منشور (نعم/لا)", "المادة"];
+    const rows = collegeLessons.map(l => [
+      l.title,
+      l.content,
+      l.summary,
+      l.display_order,
+      l.is_published ? "نعم" : "لا",
+      l.subject_id ? (subjects.find(s => s.id === l.subject_id)?.name_ar || "") : "",
+    ]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([header, ...rows]), "الدروس");
+    XLSX.writeFile(wb, "تصدير_الدروس.xlsx");
+  };
+
   // --- Bulk Import ---
   const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
@@ -753,6 +774,9 @@ const AdminContent = () => {
             <p className="text-sm text-muted-foreground">{filteredLessons.length} درس</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={exportLessons} size="sm" variant="outline">
+              <Download className="w-4 h-4 ml-1" />تصدير
+            </Button>
             <Button onClick={() => { setImportUniId(filterUni); setImportCollegeId(filterCollege); setImportMode("full"); setImportDialogOpen(true); }} size="sm" variant="outline">
               <Upload className="w-4 h-4 ml-1" />استيراد
             </Button>
