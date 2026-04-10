@@ -24,7 +24,8 @@ interface Subject {
 
 interface Lesson {
   id: string;
-  major_id: string;
+  major_id: string | null;
+  college_id: string | null;
   subject_id: string | null;
   title: string;
   content: string;
