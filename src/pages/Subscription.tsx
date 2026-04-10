@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, CreditCard, Upload, CheckCircle, Clock,
   Building, ArrowLeftRight, ChevronRight, GraduationCap, Smartphone, Globe,
-  Star, Sparkles, Tag, Timer, Info, ChevronDown
+  Star, Sparkles, Tag, Timer, Info, ChevronDown, ZoomIn, Download
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -537,13 +537,48 @@ const Subscription = () => {
                   {promoDiscount > 0 && <div className="text-green-600">خصم {promoDiscount}% مُطبّق</div>}
                   {selectedMethod.barcode_url && (
                     <div className="mt-3 text-center">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">امسح الباركود للتحويل مباشرة (اضغط للتكبير)</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">امسح الباركود للتحويل مباشرة</p>
                       <img
                         src={selectedMethod.barcode_url}
                         alt="باركود الدفع"
                         className="mx-auto max-w-[200px] rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => setBarcodeZoom(selectedMethod.barcode_url)}
                       />
+                      <div className="flex justify-center gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={() => setBarcodeZoom(selectedMethod.barcode_url)}
+                        >
+                          <ZoomIn className="w-3.5 h-3.5" />
+                          تكبير
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(selectedMethod.barcode_url!);
+                              const blob = await res.blob();
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `barcode-${selectedMethod.name}.jpg`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              window.open(selectedMethod.barcode_url!, "_blank");
+                            }
+                          }}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          تحميل
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
