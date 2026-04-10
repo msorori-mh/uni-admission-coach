@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import CompleteProfile from "./pages/CompleteProfile";
 import AdminLogin from "./pages/AdminLogin";
+import AdminResetPassword from "./pages/AdminResetPassword";
 import Dashboard from "./pages/Dashboard";
 import StudentProfile from "./pages/StudentProfile";
 import Notifications from "./pages/Notifications";
@@ -67,6 +68,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/admin-reset-password" element={<AdminResetPassword />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<StudentProfile />} />
                 <Route path="/notifications" element={<Notifications />} />
