@@ -156,7 +156,7 @@ const AdminContent = () => {
   const [importing, setImporting] = useState(false);
   const [importUniId, setImportUniId] = useState("");
   const [importCollegeId, setImportCollegeId] = useState("");
-  const [importMajorId, setImportMajorId] = useState("");
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Import questions for specific lesson (from questions panel)
