@@ -346,7 +346,12 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Stats Cards */}
+            {/* Daily Tip */}
+            {!isAdmin && (
+              <DailyTipCard />
+            )}
+
+
             {totalExams > 0 && (
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 {statCards.map((s) => (
