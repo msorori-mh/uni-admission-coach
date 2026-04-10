@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import CompleteProfile from "./pages/CompleteProfile";
 import AdminLogin from "./pages/AdminLogin";
 import AdminResetPassword from "./pages/AdminResetPassword";
@@ -74,6 +75,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
                 <Route path="/admin-reset-password" element={<AdminResetPassword />} />
