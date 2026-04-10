@@ -266,6 +266,23 @@ const AdminPaymentMethods = () => {
             <div className="space-y-2"><Label>{type === "network_transfer" ? "تحويل بأسم (اسم المستلم)" : "اسم صاحب الحساب"}</Label><Input value={accountName} onChange={(e) => setAccountName(e.target.value)} /></div>
             <div className="space-y-2"><Label>{type === "bank" ? "رقم الحساب" : type === "exchange" || type === "network_transfer" ? "رقم الهاتف" : "رقم المحفظة"}</Label><Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} /></div>
             <div className="space-y-2"><Label>تفاصيل إضافية</Label><Textarea value={details} onChange={(e) => setDetails(e.target.value)} placeholder="الفرع، ملاحظات..." /></div>
+            <div className="space-y-2">
+              <Label>صورة الباركود / QR Code</Label>
+              {barcodePreview && !removingBarcode ? (
+                <div className="relative inline-block">
+                  <img src={barcodePreview} alt="باركود" className="max-w-[150px] rounded-lg border" />
+                  <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6" onClick={() => { setRemovingBarcode(true); setBarcodeFile(null); }}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Input type="file" accept="image/*" onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) { setBarcodeFile(f); setBarcodePreview(URL.createObjectURL(f)); setRemovingBarcode(false); }
+                }} />
+              )}
+              {barcodeFile && <img src={URL.createObjectURL(barcodeFile)} alt="معاينة" className="max-w-[150px] rounded-lg border mt-1" />}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>الترتيب</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} /></div>
               <div className="flex items-center gap-2 pt-6"><Switch checked={isActive} onCheckedChange={setIsActive} /><Label>مفعل</Label></div>
