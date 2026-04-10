@@ -618,7 +618,32 @@ const AdminContent = () => {
       l.subject_id ? (subjects.find(s => s.id === l.subject_id)?.name_ar || "") : "",
     ]);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([header, ...rows]), "الدروس");
-    XLSX.writeFile(wb, "تصدير_الدروس.xlsx");
+
+    // Export questions sheet
+    const qHeader = ["عنوان الدرس", "نص السؤال", "الخيار أ", "الخيار ب", "الخيار ج", "الخيار د", "الإجابة الصحيحة", "الشرح", "ترتيب العرض", "المادة"];
+    const qRows: (string | number)[][] = [];
+    collegeLessons.forEach(l => {
+      const lessonQs = questions.filter(q => q.lesson_id === l.id);
+      lessonQs.forEach(q => {
+        qRows.push([
+          l.title,
+          q.question_text,
+          q.option_a,
+          q.option_b,
+          q.option_c,
+          q.option_d,
+          q.correct_option,
+          q.explanation,
+          q.display_order,
+          q.subject || "general",
+        ]);
+      });
+    });
+    if (qRows.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([qHeader, ...qRows]), "الأسئلة");
+    }
+
+    XLSX.writeFile(wb, "تصدير_الدروس_والأسئلة.xlsx");
   };
 
   // --- Bulk Import ---
