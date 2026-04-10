@@ -27,7 +27,7 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
     const fetchSub = async () => {
       const { data } = await supabase
         .from("subscriptions")
-        .select("status, expires_at, plan_id, trial_ends_at")
+        .select("status, expires_at, plan_id, trial_ends_at, subscription_plans(slug, allowed_major_ids)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1);
@@ -41,19 +41,9 @@ export const useSubscription = (userId: string | undefined): SubscriptionStatus 
       const isActive = sub.status === "active" && (!sub.expires_at || new Date(sub.expires_at) > new Date());
       const isTrial = sub.status === "trial" && !!sub.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
 
-      let planSlug: string | null = null;
-      let allowedMajorIds: string[] | null = null;
-      if (sub.plan_id) {
-        const { data: plan } = await supabase
-          .from("subscription_plans")
-          .select("slug, allowed_major_ids")
-          .eq("id", sub.plan_id)
-          .single();
-        if (plan) {
-          planSlug = plan.slug;
-          allowedMajorIds = plan.allowed_major_ids;
-        }
-      }
+      const plan = sub.subscription_plans as { slug: string; allowed_major_ids: string[] | null } | null;
+      const planSlug = plan?.slug ?? null;
+      const allowedMajorIds = plan?.allowed_major_ids ?? null;
 
       setStatus({
         hasSubscription: true,
