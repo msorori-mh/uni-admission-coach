@@ -33,12 +33,24 @@ const DeleteAccount = () => {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // Sign out and notify - actual deletion handled by support/admin
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("يرجى تسجيل الدخول مرة أخرى.");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("delete-account", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+
       await supabase.auth.signOut();
-      toast.success("تم إرسال طلب حذف حسابك. سيتم حذف جميع بياناتك خلال 30 يوماً. يمكنك التواصل معنا لإلغاء الطلب خلال هذه الفترة.");
+      toast.success("تم حذف حسابك وجميع بياناتك بنجاح.");
       navigate("/login", { replace: true });
     } catch {
-      toast.error("حدث خطأ. يرجى المحاولة مرة أخرى.");
+      toast.error("حدث خطأ أثناء حذف الحساب. يرجى المحاولة مرة أخرى.");
     } finally {
       setDeleting(false);
     }
@@ -65,7 +77,7 @@ const DeleteAccount = () => {
               <div>
                 <h2 className="font-bold text-foreground text-lg mb-2">تحذير: هذا الإجراء لا يمكن التراجع عنه</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  عند حذف حسابك، سيتم إزالة جميع بياناتك بشكل نهائي بعد 30 يوماً من تقديم الطلب. يمكنك إلغاء الطلب خلال هذه الفترة بالتواصل معنا.
+                  عند حذف حسابك، سيتم إزالة جميع بياناتك بشكل نهائي وفوري من النظام. لا يمكن استعادة أي بيانات بعد الحذف.
                 </p>
               </div>
             </div>
@@ -127,7 +139,7 @@ const DeleteAccount = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>تأكيد نهائي</AlertDialogTitle>
                   <AlertDialogDescription>
-                    هل أنت متأكد تماماً؟ سيتم تسجيل خروجك فوراً وحذف جميع بياناتك خلال 30 يوماً.
+                    هل أنت متأكد تماماً؟ سيتم تسجيل خروجك فوراً وحذف جميع بياناتك نهائياً من النظام.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-row-reverse gap-2">
