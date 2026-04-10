@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
 import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Pencil, Trash2, Building, ArrowLeftRight, Smartphone, Globe } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Building, ArrowLeftRight, Smartphone, Globe, QrCode, X } from "lucide-react";
 
 interface PaymentMethod {
   id: string;
@@ -42,6 +42,9 @@ const AdminPaymentMethods = () => {
   const [details, setDetails] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState("0");
+  const [barcodeFile, setBarcodeFile] = useState<File | null>(null);
+  const [barcodePreview, setBarcodePreview] = useState<string | null>(null);
+  const [removingBarcode, setRemovingBarcode] = useState(false);
 
   const fetchMethods = async () => {
     const { data } = await supabase.from("payment_methods").select("*").order("sort_order");
@@ -56,6 +59,7 @@ const AdminPaymentMethods = () => {
   const resetForm = () => {
     setType("bank"); setName(""); setAccountName(""); setAccountNumber("");
     setDetails(""); setIsActive(true); setSortOrder("0"); setEditing(null);
+    setBarcodeFile(null); setBarcodePreview(null); setRemovingBarcode(false);
   };
 
   const openCreate = () => { resetForm(); setDialogOpen(true); };
@@ -66,16 +70,35 @@ const AdminPaymentMethods = () => {
     setAccountName(m.account_name || ""); setAccountNumber(m.account_number || "");
     setDetails(m.details || ""); setIsActive(m.is_active);
     setSortOrder(m.sort_order.toString());
+    setBarcodeFile(null); setBarcodePreview(m.barcode_url || null); setRemovingBarcode(false);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!name) { toast({ variant: "destructive", title: "يرجى إدخال الاسم" }); return; }
     setSaving(true);
+
+    let barcode_url: string | null = editing?.barcode_url ?? null;
+
+    // Upload new barcode
+    if (barcodeFile) {
+      const ext = barcodeFile.name.split(".").pop();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("payment-barcodes").upload(path, barcodeFile);
+      if (upErr) { toast({ variant: "destructive", title: "فشل رفع الباركود" }); setSaving(false); return; }
+      const { data: urlData } = supabase.storage.from("payment-barcodes").getPublicUrl(path);
+      barcode_url = urlData.publicUrl;
+    }
+
+    // Remove barcode
+    if (removingBarcode && !barcodeFile) {
+      barcode_url = null;
+    }
+
     const payload = {
       type, name, account_name: accountName || null,
       account_number: accountNumber || null, details: details || null,
-      is_active: isActive, sort_order: Number(sortOrder),
+      is_active: isActive, sort_order: Number(sortOrder), barcode_url,
     };
 
     const { error } = editing
