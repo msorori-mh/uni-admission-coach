@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -536,8 +536,13 @@ const Subscription = () => {
                   {promoDiscount > 0 && <div className="text-green-600">خصم {promoDiscount}% مُطبّق</div>}
                   {selectedMethod.barcode_url && (
                     <div className="mt-3 text-center">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">امسح الباركود للتحويل مباشرة</p>
-                      <img src={selectedMethod.barcode_url} alt="باركود الدفع" className="mx-auto max-w-[200px] rounded-lg border" />
+                      <p className="text-sm font-medium text-muted-foreground mb-2">امسح الباركود للتحويل مباشرة (اضغط للتكبير)</p>
+                      <img
+                        src={selectedMethod.barcode_url}
+                        alt="باركود الدفع"
+                        className="mx-auto max-w-[200px] rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setBarcodeZoom(selectedMethod.barcode_url)}
+                      />
                     </div>
                   )}
                 </div>
