@@ -1,56 +1,27 @@
 
 
-## توقيع ملف APK للنشر على Google Play Store
+## تحديث صفحة الهبوط بأقسام تسويقية واحترافية
 
-هذه العملية تتم بالكامل على جهازك المحلي باستخدام Android Studio وأدوات Java. لا تحتاج تعديلات على الكود.
+### ملخص
+إعادة بناء صفحة `Index.tsx` لإضافة 6 أقسام تسويقية جديدة أسفل زر "ابدأ الآن"، مع استخدام ألوان العلامة التجارية (Navy #1A237E و Green #2E7D32) وأنيميشن سلس.
 
-### الخطوات
+### الأقسام الجديدة (بالترتيب)
 
-**1. إنشاء مفتاح التوقيع (Keystore)**
+1. **Main Hook** — عنوان جذاب كبير بخلفية متدرجة
+2. **Core Features** — 3 أعمدة بأيقونات (AI، بنك الأسئلة، المحاكاة) مع أنيميشن ظهور
+3. **Value Badges** — صف أفقي من 3 شارات (ثقة، تركيز، أوفلاين)
+4. **Stats Bar** — 3 عدادات متحركة (+3000 سؤال، +150 ملخص، 100% مطابقة)
+5. **Trust Note** — نص ثقة أكاديمية
+6. **Social Proof** — دعوة للانضمام مع CTA
 
-افتح Terminal على جهازك ونفذ:
-```bash
-keytool -genkey -v -keystore mufadala-release.keystore -alias mufadala -keyalg RSA -keysize 2048 -validity 10000
-```
-سيطلب منك:
-- كلمة مرور للـ Keystore (احفظها جيداً)
-- اسمك، اسم المؤسسة، المدينة، الدولة
+### التفاصيل التقنية
 
-> **مهم جداً**: احتفظ بنسخة احتياطية من ملف `mufadala-release.keystore` وكلمة المرور. فقدانهما يعني عدم القدرة على تحديث التطبيق مستقبلاً.
+**ملف واحد للتعديل**: `src/pages/Index.tsx`
 
-**2. بناء APK موقّع من Android Studio**
-
-1. افتح المشروع في Android Studio (`npx cap open android`)
-2. اذهب إلى **Build → Generate Signed Bundle / APK**
-3. اختر **APK** (أو **Android App Bundle** وهو الأفضل لـ Google Play)
-4. اضغط **Next** واختر ملف الـ Keystore الذي أنشأته
-5. أدخل كلمة المرور والـ Alias
-6. اختر **release** كـ Build Variant
-7. اضغط **Finish**
-
-الملف الموقّع سيكون في:
-```
-android/app/release/app-release.apk
-```
-
-**3. النشر على Google Play (اختياري: App Bundle)**
-
-Google Play يفضل **AAB** (Android App Bundle) بدلاً من APK:
-- في الخطوة 3 أعلاه، اختر **Android App Bundle** بدلاً من APK
-- الملف سيكون `app-release.aab`
-
-**4. رفع التطبيق على Google Play Console**
-
-1. أنشئ حساب مطور على [Google Play Console](https://play.google.com/console) (رسوم تسجيل $25 مرة واحدة)
-2. أنشئ تطبيق جديد واملأ بيانات التطبيق (الاسم، الوصف، لقطات الشاشة، الأيقونة)
-3. اذهب إلى **Release → Production → Create new release**
-4. ارفع ملف AAB أو APK الموقّع
-5. أكمل متطلبات المتجر (سياسة الخصوصية، تصنيف المحتوى، إلخ)
-6. أرسل للمراجعة
-
-### ملاحظات مهمة
-
-- **Google Play App Signing**: عند رفع أول إصدار، يمكنك تفعيل "Google Play App Signing" ليقوم Google بإدارة مفتاح التوقيع النهائي (موصى به)
-- **الحد الأدنى لـ targetSdkVersion**: Google Play يتطلب حالياً API 34 كحد أدنى
-- **سياسة الخصوصية**: مطلوبة إذا كان التطبيق يجمع بيانات المستخدمين
+- استبدال قسم Features الحالي بالأقسام الجديدة
+- إضافة hook `useCountUp` بسيط للعدادات المتحركة باستخدام `useEffect` + `useState`
+- استخدام Intersection Observer لتشغيل الأنيميشن عند الظهور في الشاشة
+- أيقونات من `lucide-react`: `Brain`, `BookOpen`, `FileCheck`, `Shield`, `Focus`, `WifiOff`, `Users`, `CheckCircle`
+- تصميم متجاوب: عمود واحد للموبايل، 3 أعمدة للشاشات الكبيرة
+- ألوان مباشرة: `bg-[#1A237E]`, `text-[#2E7D32]` حيث لزم، مع استخدام CSS variables الموجودة (`primary`, `accent`)
 
