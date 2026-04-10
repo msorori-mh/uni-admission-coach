@@ -330,6 +330,32 @@ const LessonDetail = () => {
             </Card>
           </TabsContent>
 
+          {lesson.presentation_url && (
+            <TabsContent value="presentation" className="mt-4 space-y-4">
+              <Card>
+                <CardContent className="py-4 px-4">
+                  <div className="aspect-[16/9] w-full rounded-lg overflow-hidden border bg-muted">
+                    <iframe
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allowFullScreen
+                      title="العرض التقديمي"
+                    />
+                  </div>
+                  <div className="mt-3 flex justify-center">
+                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                      <a href={lesson.presentation_url} download target="_blank" rel="noopener noreferrer">
+                        <Download className="w-4 h-4" />
+                        تحميل العرض التقديمي
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
           <TabsContent value="quiz" className="mt-4 space-y-4">
             {questions.length === 0 ? (
               <Card>
