@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Download, X, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isNativePlatform } from "@/lib/capacitor";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -28,7 +29,7 @@ export default function InstallAppPrompt() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, [isInStandalone]);
 
-  if (isInStandalone || dismissed || !isMobile) return null;
+  if (isInStandalone || dismissed || !isMobile || isNativePlatform()) return null;
   if (!deferredPrompt && !isIOS) return null;
 
   const handleInstall = async () => {

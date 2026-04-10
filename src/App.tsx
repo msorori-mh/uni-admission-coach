@@ -46,6 +46,8 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import ChatWidget from "./components/ChatWidget";
 import InstallAppPrompt from "./components/InstallAppPrompt";
 import { useOfflineExamSync } from "./hooks/useOfflineExamSync";
+import { useEffect } from "react";
+import { initializeCapacitor } from "./lib/capacitor";
 
 const queryClient = new QueryClient();
 
