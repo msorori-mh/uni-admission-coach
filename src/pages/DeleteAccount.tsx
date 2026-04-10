@@ -33,12 +33,24 @@ const DeleteAccount = () => {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // Sign out and notify - actual deletion handled by support/admin
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("يرجى تسجيل الدخول مرة أخرى.");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("delete-account", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+
       await supabase.auth.signOut();
-      toast.success("تم إرسال طلب حذف حسابك. سيتم حذف جميع بياناتك خلال 30 يوماً. يمكنك التواصل معنا لإلغاء الطلب خلال هذه الفترة.");
+      toast.success("تم حذف حسابك وجميع بياناتك بنجاح.");
       navigate("/login", { replace: true });
     } catch {
-      toast.error("حدث خطأ. يرجى المحاولة مرة أخرى.");
+      toast.error("حدث خطأ أثناء حذف الحساب. يرجى المحاولة مرة أخرى.");
     } finally {
       setDeleting(false);
     }
