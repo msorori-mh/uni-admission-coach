@@ -57,6 +57,10 @@ function OfflineExamSyncProvider({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  useEffect(() => {
+    initializeCapacitor();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
