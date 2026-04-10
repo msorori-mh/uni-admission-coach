@@ -139,7 +139,7 @@ const DeleteAccount = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>تأكيد نهائي</AlertDialogTitle>
                   <AlertDialogDescription>
-                    هل أنت متأكد تماماً؟ سيتم تسجيل خروجك فوراً وحذف جميع بياناتك خلال 30 يوماً.
+                    هل أنت متأكد تماماً؟ سيتم تسجيل خروجك فوراً وحذف جميع بياناتك نهائياً من النظام.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-row-reverse gap-2">
