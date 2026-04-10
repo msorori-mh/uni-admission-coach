@@ -152,6 +152,8 @@ const AdminContent = () => {
   // Import state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importUniId, setImportUniId] = useState("");
+  const [importCollegeId, setImportCollegeId] = useState("");
   const [importMajorId, setImportMajorId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
