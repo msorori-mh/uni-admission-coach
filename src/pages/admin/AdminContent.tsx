@@ -734,7 +734,7 @@ const AdminContent = () => {
             <p className="text-sm text-muted-foreground">{filteredLessons.length} درس</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => { setImportUniId(filterUni); setImportCollegeId(filterCollege); setImportMajorId(""); setImportDialogOpen(true); }} size="sm" variant="outline">
+            <Button onClick={() => { setImportUniId(filterUni); setImportCollegeId(filterCollege); setImportDialogOpen(true); }} size="sm" variant="outline">
               <Upload className="w-4 h-4 ml-1" />استيراد
             </Button>
             <Button onClick={openCreateLesson} size="sm"><Plus className="w-4 h-4 ml-1" />إضافة درس</Button>
@@ -1122,14 +1122,14 @@ const AdminContent = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>الجامعة *</Label>
-              <select value={importUniId} onChange={(e) => { setImportUniId(e.target.value); setImportCollegeId(""); setImportMajorId(""); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <select value={importUniId} onChange={(e) => { setImportUniId(e.target.value); setImportCollegeId(""); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">اختر الجامعة</option>
                 {scopedUniversities.map((u: any) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <Label>الكلية *</Label>
-              <select value={importCollegeId} onChange={(e) => { setImportCollegeId(e.target.value); setImportMajorId(""); }} disabled={!importUniId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              <select value={importCollegeId} onChange={(e) => { setImportCollegeId(e.target.value); }} disabled={!importUniId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
                 <option value="">اختر الكلية</option>
                 {scopedColleges.filter((c: any) => c.university_id === importUniId).map((c: any) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
               </select>
