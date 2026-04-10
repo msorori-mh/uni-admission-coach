@@ -1207,7 +1207,7 @@ const AdminContent = () => {
               )}
               <div className="flex gap-3 flex-wrap">
                 {importMode === "questions_only" ? (
-                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={downloadQuestionsTemplate}>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={downloadQuestionsOnlyTemplate}>
                     <Download className="w-3 h-3 ml-1" />تحميل قالب الأسئلة
                   </Button>
                 ) : (
