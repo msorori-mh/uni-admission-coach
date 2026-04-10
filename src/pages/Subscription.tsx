@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, CreditCard, Upload, CheckCircle, Clock,
   Building, ArrowLeftRight, ChevronRight, GraduationCap, Smartphone, Globe,
-  Star, Sparkles, Tag, Timer, Info, ChevronDown, ZoomIn, Download
+  Star, Sparkles, Tag, Timer, Info, ChevronDown, ZoomIn, Download, Copy, Check
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -85,6 +85,15 @@ const Subscription = () => {
   const [promoId, setPromoId] = useState<string | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [barcodeZoom, setBarcodeZoom] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      toast({ title: "تم النسخ", description: `تم نسخ ${field} بنجاح` });
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  };
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -532,7 +541,18 @@ const Subscription = () => {
                   <div><span className="text-muted-foreground">المبلغ:</span> <span className="font-semibold">{final_.toLocaleString()} {selectedPlan.currency}</span></div>
                   <div><span className="text-muted-foreground">طريقة الدفع:</span> <span className="font-semibold">{selectedMethod.name}</span></div>
                   {selectedMethod.account_number && (
-                    <div><span className="text-muted-foreground">الحساب:</span> <span className="font-semibold">{selectedMethod.account_number}</span></div>
+                    <div
+                      className="flex items-center gap-1 cursor-pointer group"
+                      onClick={() => copyToClipboard(selectedMethod.account_number!, "رقم الحساب")}
+                    >
+                      <span className="text-muted-foreground">الحساب:</span>
+                      <span className="font-semibold">{selectedMethod.account_number}</span>
+                      {copiedField === "رقم الحساب" ? (
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
                   )}
                   {promoDiscount > 0 && <div className="text-green-600">خصم {promoDiscount}% مُطبّق</div>}
                   {selectedMethod.barcode_url && (
