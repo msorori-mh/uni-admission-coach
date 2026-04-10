@@ -400,6 +400,43 @@ const Subscription = () => {
                 </CardContent>
               </Card>
 
+              {/* Zone info */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground">
+                    <Info className="w-4 h-4" />
+                    <span>تعرف على تسعيرة المناطق</span>
+                    <ChevronDown className="w-4 h-4 transition-transform [[data-state=open]_&]:rotate-180" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <Card className="mt-2">
+                    <CardContent className="py-4 px-4 space-y-4">
+                      <div className={`rounded-lg p-3 border ${zone === "a" ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border"}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-sm">المنطقة أ</span>
+                          <Badge variant={zone === "a" ? "default" : "secondary"}>3,000 ريال</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {ZONE_A_GOVERNORATES.join(" · ")}
+                        </p>
+                        {zone === "a" && <p className="text-xs text-primary font-medium mt-1">← منطقتك</p>}
+                      </div>
+                      <div className={`rounded-lg p-3 border ${zone === "b" ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border"}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-sm">المنطقة ب</span>
+                          <Badge variant={zone === "b" ? "default" : "secondary"}>7,000 ريال</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {ZONE_B_GOVERNORATES.join(" · ")}
+                        </p>
+                        {zone === "b" && <p className="text-xs text-primary font-medium mt-1">← منطقتك</p>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CollapsibleContent>
+              </Collapsible>
+
               {/* Promo code */}
               <Card>
                 <CardContent className="py-3 px-4">
