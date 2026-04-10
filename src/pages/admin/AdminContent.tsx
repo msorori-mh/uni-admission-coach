@@ -750,6 +750,7 @@ const AdminContent = () => {
           const title = String(row[0]).trim();
           const subjectName = row[5] ? String(row[5]).trim() : "";
           const matchedSubject = subjectName ? subjects.find(s => s.name_ar === subjectName || s.code === subjectName) : null;
+          const presentationUrl = row[6] ? String(row[6]).trim() : "";
           const { data: inserted, error } = await supabase.from("lessons").insert({
             college_id: importCollegeId,
             title,
@@ -758,6 +759,7 @@ const AdminContent = () => {
             display_order: row[3] ? Number(row[3]) : i,
             is_published: row[4] ? String(row[4]).includes("نعم") || String(row[4]).toLowerCase() === "true" : false,
             subject_id: matchedSubject?.id || null,
+            presentation_url: presentationUrl || null,
           }).select("id").single();
           if (error) {
             toast({ variant: "destructive", title: `خطأ في درس "${title}": ${error.message}` });
