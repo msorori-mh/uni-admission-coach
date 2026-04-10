@@ -890,6 +890,11 @@ const AdminContent = () => {
                           <Badge variant="outline" className="text-[10px]">
                             {questions.filter((q) => q.lesson_id === l.id).length} سؤال
                           </Badge>
+                          {l.presentation_url && (
+                            <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-600 gap-0.5">
+                              <Presentation className="w-2.5 h-2.5" /> عرض
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>

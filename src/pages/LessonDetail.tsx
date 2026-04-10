@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { ChevronLeft, ChevronRight, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock, Star, Download, Trash2, WifiOff, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, FileText, HelpCircle, CheckCircle2, XCircle, Loader2, Check, Lock, Star, Download, Trash2, WifiOff, Eye, EyeOff, Presentation } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import LessonReviews from "@/components/LessonReviews";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ interface Lesson {
   summary: string;
   is_free: boolean;
   major_id: string;
+  presentation_url: string | null;
 }
 
 interface Question {
@@ -77,7 +78,7 @@ const LessonDetail = () => {
       }
 
       const [{ data: l }, { data: q }, { data: s }] = await Promise.all([
-        supabase.from("lessons").select("id, title, content, summary, is_free, major_id").eq("id", id).maybeSingle(),
+        supabase.from("lessons").select("id, title, content, summary, is_free, major_id, presentation_url").eq("id", id).maybeSingle(),
         supabase.from("questions").select("*").eq("lesson_id", id).order("display_order"),
         supabase.from("students").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
