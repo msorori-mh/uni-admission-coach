@@ -21,6 +21,11 @@ const ZONE_A_GOVERNORATES = [
   "صعدة", "حجة", "المحويت", "ريمة",
 ];
 
+const ZONE_B_GOVERNORATES = [
+  "عدن", "تعز", "لحج", "أبين", "الضالع", "شبوة",
+  "حضرموت", "المهرة", "مأرب", "الجوف", "البيضاء", "سقطرى",
+];
+
 interface Plan {
   id: string; name: string; slug: string; description: string;
   features: string[]; price_zone_a: number; price_zone_b: number;
