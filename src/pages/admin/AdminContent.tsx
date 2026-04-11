@@ -1416,7 +1416,6 @@ const AdminContent = () => {
               </div>
             </div>
           </div>
-          </div>
         </DialogContent>
       </Dialog>
 
