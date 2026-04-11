@@ -111,7 +111,7 @@ const AdminContent = () => {
   const [lessonSummary, setLessonSummary] = useState("");
   const [lessonMajorId, setLessonMajorId] = useState("");
   const [lessonUniId, setLessonUniId] = useState("");
-  const [lessonCollegeId, setLessonCollegeId] = useState("");
+  const [lessonCollegeIds, setLessonCollegeIds] = useState<string[]>([]);
   const [lessonOrder, setLessonOrder] = useState(0);
   const [lessonPublished, setLessonPublished] = useState(false);
   const [lessonFree, setLessonFree] = useState(false);
