@@ -1,54 +1,52 @@
 
 
-# خطة تحسين أداء التطبيق على Android APK
+# خطة: قراءة بيانات سند الدفع تلقائياً ومطابقة المستلم
 
 ## ملخص
-6 تحسينات لتسريع التطبيق داخل WebView على Android: تقليل حجم الـ bundle الأولي، إزالة التبعية على الإنترنت للخطوط، تسريع ظهور الشاشة الأولى، وتخفيف الحمل على GPU.
+إضافة خاصية قراءة ذكية (OCR/AI) لسندات الدفع المرفوعة من الطلاب. عند فتح المراجعة، يتم تحليل صورة السند تلقائياً لاستخراج اسم المرسل واسم المستلم، ثم مقارنة اسم المستلم مع بيانات طريقة الدفع المسجلة (account_name). يظهر للأدمن حالة المطابقة مع أزرار اعتماد/رفض ذكية.
 
 ---
 
 ## المهام
 
-### 1. Lazy Loading للصفحات (App.tsx)
-- تحويل 35+ صفحة من `import` مباشر إلى `React.lazy()`
-- الإبقاء على `Index` و `Login` فقط كـ eager imports
-- إضافة `<Suspense>` مع skeleton loader بسيط حول `<Routes>`
-- **التأثير**: تقليل حجم الـ initial bundle بنسبة 60-70%
+### 1. إنشاء Edge Function لتحليل السند (`analyze-receipt`)
+- تستقبل رابط صورة السند (signed URL) واسم المستلم المتوقع (account_name من طريقة الدفع)
+- ترسل الصورة إلى نموذج Gemini 2.5 Flash عبر Lovable AI Gateway للقراءة
+- Prompt: "استخرج من هذه الصورة: اسم المرسل، اسم المستلم، المبلغ، رقم العملية إن وجد"
+- تُرجع JSON: `{ sender_name, recipient_name, amount, transaction_id, is_match }`
+- `is_match` = مقارنة نصية (تطابق جزئي/كامل) بين `recipient_name` و `account_name`
 
-### 2. Self-host خط Cairo (index.css + public/fonts/)
-- تحميل ملفات Cairo WOFF2 (أوزان 400, 500, 600, 700) إلى `public/fonts/`
-- استبدال سطر `@import url('https://fonts.googleapis.com/...')` بـ `@font-face` محلي مع `font-display: swap`
-- **التأثير**: إلغاء طلب شبكة خارجي، ظهور النص فوراً
+### 2. تحديث صفحة مراجعة الدفع (`AdminPayments.tsx`)
+- عند فتح dialog المراجعة لطلب معلق:
+  - جلب `account_name` من جدول `payment_methods` (توسيع الـ fetch ليشمل `account_name`)
+  - استدعاء Edge Function لتحليل السند تلقائياً
+  - عرض نتائج التحليل:
+    - **اسم المرسل** (الطالب/المحوِّل)
+    - **اسم المستلم** المستخرج من السند
+    - **اسم المستلم المتوقع** (من بيانات طريقة الدفع)
+    - **حالة المطابقة**: شارة خضراء "مطابق" أو حمراء "غير مطابق"
+    - المبلغ ورقم العملية إن توفر
+  - إذا مطابق: زر "اعتماد وتفعيل" أخضر فعّال
+  - إذا غير مطابق: زر "رفض" مع تعبئة تلقائية لسبب الرفض ("بيانات المستلم غير مطابقة")
+  - يبقى بإمكان الأدمن الموافقة يدوياً حتى لو غير مطابق (مرونة)
 
-### 3. تحسين AuthContext (src/contexts/AuthContext.tsx)
-- بعد `getSession()` ناجح: عمل `setUser(session.user)` فوراً ثم `fetchRoles` بشكل غير متزامن بدون انتظار
-- تعيين `setLoading(false)` فور تعيين الـ user بدلاً من انتظار الـ roles
-- **التأثير**: تقليل وقت ظهور الشاشة الأولى بـ 500-800ms
-
-### 4. إخفاء ChatWidget على Native (App.tsx)
-- لف `<ChatWidget />` بشرط `!isNativePlatform()` لعدم تحميله أو عرضه في APK
-- **التأثير**: توفير ذاكرة وتقليل DOM nodes على الموبايل
-
-### 5. إزالة framer-motion من Dashboard (src/pages/Dashboard.tsx)
-- استبدال `<motion.div>` بـ `<div>` عادي مع CSS transitions بسيطة (opacity + transform عبر Tailwind `animate-`)
-- إزالة `import { motion } from "framer-motion"` — إذا لم يُستخدم في مكان آخر، يمكن إزالة المكتبة من package.json
-- **التأثير**: توفير ~100KB gzipped من الـ bundle
-
-### 6. تعليمات AndroidManifest (للمستخدم)
-- لا يوجد `AndroidManifest.xml` في المستودع — يُولَّد محلياً
-- سأوفر التعليمات لإضافة `android:hardwareAccelerated="true"` و `android:largeHeap="true"` يدوياً بعد `npx cap add android`
+### 3. تحسين عرض بيانات المراجعة
+- إضافة قسم "نتائج تحليل السند" في dialog المراجعة مع تصميم واضح
+- عرض حالة التحميل أثناء التحليل (spinner + "جاري تحليل السند...")
+- معالجة حالة الفشل (صورة غير واضحة / لا يمكن القراءة)
 
 ---
 
 ## التفاصيل التقنية
 
-**الملفات المتأثرة:**
-- `src/App.tsx` — lazy imports + Suspense + إخفاء ChatWidget
-- `src/index.css` — @font-face بدلاً من Google Fonts import
-- `public/fonts/` — ملفات Cairo WOFF2 (يتم تحميلها)
-- `src/contexts/AuthContext.tsx` — parallel auth flow
-- `src/pages/Dashboard.tsx` — إزالة framer-motion
-- `package.json` — إزالة framer-motion إذا لم يُستخدم في مكان آخر
+**Edge Function (`supabase/functions/analyze-receipt/index.ts`)**:
+- تستخدم Lovable AI Gateway مع نموذج `google/gemini-2.5-flash` (يدعم الصور)
+- تمرر الصورة كـ base64 أو URL مع prompt عربي محدد
+- تقارن الأسماء بتطبيع (إزالة مسافات زائدة، تطبيع همزات) قبل المقارنة
 
-**framer-motion**: يُستخدم فقط في `Dashboard.tsx` — سيتم إزالته من `package.json` بالكامل.
+**الملفات المتأثرة:**
+- `supabase/functions/analyze-receipt/index.ts` — جديد
+- `src/pages/admin/AdminPayments.tsx` — تحديث dialog المراجعة + fetch account_name
+
+**النموذج المستخدم**: `google/gemini-2.5-flash` — سريع ويدعم قراءة الصور العربية بدون حاجة لمفتاح API خارجي.
 
