@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveNativeSession, getNativeSession, clearNativeSession } from "@/lib/nativeSessionStorage";
+import { toast } from "sonner";
 import { isNativePlatform } from "@/lib/capacitor";
 import type { User } from "@supabase/supabase-js";
 
@@ -36,11 +37,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return;
     initialized.current = true;
 
-    const fetchRoles = async (userId: string) => {
-      const { data } = await supabase
+    const fetchRoles = async (userId: string, attempt = 0) => {
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId);
+      if (error) {
+        if (attempt < 1) {
+          // Retry once after 1 second
+          setTimeout(() => fetchRoles(userId, attempt + 1), 1000);
+          return;
+        }
+        toast.error("تعذّر تحميل صلاحيات الحساب. يرجى إعادة تشغيل التطبيق.");
+        return;
+      }
       const userRoles = (data || []).map((r) => r.role as AppRole);
       setRoles(userRoles);
     };
