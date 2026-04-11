@@ -15,7 +15,7 @@ import { useModeratorScope } from "@/hooks/useModeratorScope";
 import AdminLayout from "@/components/admin/AdminLayout";
 import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Loader2, FileText, HelpCircle, Upload, Download, Sparkles, ChevronDown, ChevronUp, Search, Presentation, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, FileText, HelpCircle, Upload, Download, Sparkles, ChevronDown, ChevronUp, Search, Presentation, Copy, CheckSquare } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Subject {
@@ -103,6 +103,8 @@ const AdminContent = () => {
   const [filterUni, setFilterUni] = useState("");
   const [filterCollegeIds, setFilterCollegeIds] = useState<string[]>([]);
   const [filterSubject, setFilterSubject] = useState("");
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
 
   // Lesson dialog
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
@@ -541,6 +543,24 @@ const AdminContent = () => {
     const { error } = await supabase.from("lessons").delete().eq("id", id);
     if (error) toast({ variant: "destructive", title: error.message });
     else { toast({ title: "تم الحذف" }); if (selectedLesson === id) setSelectedLesson(null); fetchData(); }
+  };
+
+  const handleBulkDeleteLessons = async () => {
+    if (selectedLessonIds.length === 0) return;
+    if (!confirm(`حذف ${selectedLessonIds.length} درس وجميع أسئلتهم؟`)) return;
+    const { error } = await supabase.from("lessons").delete().in("id", selectedLessonIds);
+    if (error) toast({ variant: "destructive", title: error.message });
+    else {
+      toast({ title: `تم حذف ${selectedLessonIds.length} درس` });
+      if (selectedLesson && selectedLessonIds.includes(selectedLesson)) setSelectedLesson(null);
+      setSelectedLessonIds([]);
+      setBulkSelectMode(false);
+      fetchData();
+    }
+  };
+
+  const toggleLessonSelection = (id: string) => {
+    setSelectedLessonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   // --- Copy Lesson to other colleges ---
@@ -1040,16 +1060,49 @@ const AdminContent = () => {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Lessons list */}
           <div className="space-y-2">
-            <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" />الدروس</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-1"><FileText className="w-4 h-4" />الدروس</h2>
+              {isAdmin && filteredLessons.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {bulkSelectMode && selectedLessonIds.length > 0 && (
+                    <Button variant="destructive" size="sm" className="text-xs h-7" onClick={handleBulkDeleteLessons}>
+                      <Trash2 className="w-3.5 h-3.5 ml-1" />حذف {selectedLessonIds.length}
+                    </Button>
+                  )}
+                  {bulkSelectMode && (
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => {
+                      setSelectedLessonIds(selectedLessonIds.length === filteredLessons.length ? [] : filteredLessons.map(l => l.id));
+                    }}>
+                      {selectedLessonIds.length === filteredLessons.length ? "إلغاء الكل" : "تحديد الكل"}
+                    </Button>
+                  )}
+                  <Button variant={bulkSelectMode ? "secondary" : "ghost"} size="sm" className="text-xs h-7" onClick={() => { setBulkSelectMode(!bulkSelectMode); setSelectedLessonIds([]); }}>
+                    <CheckSquare className="w-3.5 h-3.5 ml-1" />{bulkSelectMode ? "إلغاء" : "تحديد"}
+                  </Button>
+                </div>
+              )}
+            </div>
             {filteredLessons.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">لا توجد دروس بعد</p>}
             {filteredLessons.map((l) => (
               <Card
                 key={l.id}
-                className={`cursor-pointer transition-shadow ${selectedLesson === l.id ? "ring-2 ring-primary" : ""} ${!l.is_published ? "opacity-60" : ""}`}
-                onClick={() => { setSelectedLesson(selectedLesson === l.id ? null : l.id); setQuestionSubjectFilter("all"); setQuestionSearchQuery(""); }}
+                className={`cursor-pointer transition-shadow ${selectedLesson === l.id ? "ring-2 ring-primary" : ""} ${!l.is_published ? "opacity-60" : ""} ${bulkSelectMode && selectedLessonIds.includes(l.id) ? "ring-2 ring-destructive bg-destructive/5" : ""}`}
+                onClick={() => {
+                  if (bulkSelectMode) { toggleLessonSelection(l.id); return; }
+                  setSelectedLesson(selectedLesson === l.id ? null : l.id); setQuestionSubjectFilter("all"); setQuestionSearchQuery("");
+                }}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2">
+                      {bulkSelectMode && (
+                        <Checkbox
+                          checked={selectedLessonIds.includes(l.id)}
+                          onCheckedChange={() => toggleLessonSelection(l.id)}
+                          className="mt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
                       <div>
                         <p className="font-semibold text-sm">{l.title}</p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1078,11 +1131,14 @@ const AdminContent = () => {
                           )}
                         </div>
                       </div>
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" onClick={() => openCopyLesson(l)} title="نسخ إلى كليات أخرى"><Copy className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEditLesson(l)}><Pencil className="w-4 h-4" /></Button>
-                      {isAdmin && <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(l.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
                     </div>
+                    {!bulkSelectMode && (
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" onClick={() => openCopyLesson(l)} title="نسخ إلى كليات أخرى"><Copy className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEditLesson(l)}><Pencil className="w-4 h-4" /></Button>
+                        {isAdmin && <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(l.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
