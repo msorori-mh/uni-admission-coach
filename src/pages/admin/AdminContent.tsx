@@ -1306,8 +1306,14 @@ const AdminContent = () => {
                 {scopedColleges.filter((c: any) => c.university_id === importUniId).map((c: any) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
               </select>
             </div>
-
-            {importMode === "questions_only" && importCollegeId && (
+            <div className="space-y-2">
+              <Label>المادة الدراسية (اختياري)</Label>
+              <select value={importSubjectId} onChange={(e) => setImportSubjectId(e.target.value)} disabled={!importCollegeId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+                <option value="">تحديد من الملف</option>
+                {getSubjectsForCollege(importCollegeId).map((s) => <option key={s.id} value={s.id}>{s.name_ar}</option>)}
+              </select>
+              <p className="text-[11px] text-muted-foreground">إذا تم تحديد مادة هنا، ستُطبق على جميع الدروس المستوردة. وإلا سيتم قراءتها من الملف.</p>
+            </div>
               <div className="text-xs text-muted-foreground bg-accent/50 rounded-md p-2">
                 سيتم ربط الأسئلة بالدروس الموجودة ({lessons.filter(l => l.college_id === importCollegeId).length} درس) عبر تطابق عنوان الدرس
               </div>
