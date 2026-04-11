@@ -100,6 +100,7 @@ const AdminContent = () => {
   // Filters
   const [filterUni, setFilterUni] = useState("");
   const [filterCollege, setFilterCollege] = useState("");
+  const [filterSubject, setFilterSubject] = useState("");
 
   // Lesson dialog
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
