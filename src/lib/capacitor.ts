@@ -37,14 +37,29 @@ export async function initializeCapacitor() {
     console.warn('Keyboard plugin setup failed:', e);
   }
 
-  // Handle Android hardware back button
+  // Handle Android hardware back button — double-tap to exit
+  let lastBackPress = 0;
   App.addListener('backButton', ({ canGoBack }) => {
     if (canGoBack) {
       window.history.back();
     } else {
-      // Show confirmation before closing the app
-      if (confirm('هل تريد إغلاق التطبيق؟')) {
+      const now = Date.now();
+      if (now - lastBackPress < 2000) {
         App.exitApp();
+      } else {
+        lastBackPress = now;
+        // Show a brief toast-like message via DOM
+        const el = document.createElement('div');
+        el.textContent = 'اضغط مرة أخرى للخروج';
+        Object.assign(el.style, {
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '8px 20px',
+          borderRadius: '20px', fontSize: '14px', zIndex: '99999',
+          transition: 'opacity 0.3s', opacity: '1',
+        });
+        document.body.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; }, 1500);
+        setTimeout(() => { el.remove(); }, 1800);
       }
     }
   });
