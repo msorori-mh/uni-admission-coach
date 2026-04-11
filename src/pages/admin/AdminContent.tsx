@@ -221,9 +221,9 @@ const AdminContent = () => {
   const filteredColleges = filterUni ? scopedColleges.filter((c: any) => c.university_id === filterUni) : scopedColleges;
   
   // Compute available subjects based on selected college filter
-  const getSubjectsForCollege = (collegeId: string): Subject[] => {
-    if (!collegeId) return subjects;
-    const collegeMajorIds = scopedMajors.filter((m: any) => m.college_id === collegeId).map((m: any) => m.id);
+  const getSubjectsForColleges = (collegeIds: string[]): Subject[] => {
+    if (collegeIds.length === 0) return subjects;
+    const collegeMajorIds = scopedMajors.filter((m: any) => collegeIds.includes(m.college_id)).map((m: any) => m.id);
     const subjectIds = new Set<string>();
     collegeMajorIds.forEach((mId: string) => {
       (majorSubjectsMap[mId] || []).forEach((sId: string) => subjectIds.add(sId));
@@ -231,12 +231,17 @@ const AdminContent = () => {
     return subjectIds.size > 0 ? subjects.filter(s => subjectIds.has(s.id)) : subjects;
   };
 
-  const availableFilterSubjects = getSubjectsForCollege(filterCollege);
+  // Keep single-college helper for lesson dialog
+  const getSubjectsForCollege = (collegeId: string): Subject[] => {
+    return getSubjectsForColleges(collegeId ? [collegeId] : []);
+  };
+
+  const availableFilterSubjects = getSubjectsForColleges(filterCollegeIds);
 
   const filteredLessons = (() => {
     let result = scopedLessons;
-    if (filterCollege) {
-      result = result.filter((l) => l.college_id === filterCollege);
+    if (filterCollegeIds.length > 0) {
+      result = result.filter((l) => l.college_id && filterCollegeIds.includes(l.college_id));
     } else if (filterUni) {
       const uniCollegeIds = scopedColleges.filter((c: any) => c.university_id === filterUni).map((c: any) => c.id);
       result = result.filter((l) => l.college_id && uniCollegeIds.includes(l.college_id));
@@ -257,7 +262,7 @@ const AdminContent = () => {
     setLessonSummary("");
     setLessonMajorId("");
     setLessonUniId(filterUni);
-    setLessonCollegeIds(filterCollege ? [filterCollege] : []);
+    setLessonCollegeIds(filterCollegeIds.length > 0 ? filterCollegeIds : []);
     setLessonOrder(filteredLessons.length);
     setLessonPublished(false);
     setLessonFree(false);
@@ -876,7 +881,7 @@ const AdminContent = () => {
             <Button onClick={exportLessons} size="sm" variant="outline">
               <Download className="w-4 h-4 ml-1" />تصدير
             </Button>
-            <Button onClick={() => { setImportUniId(filterUni); setImportCollegeIds(filterCollege ? [filterCollege] : []); setImportSubjectId(filterSubject); setImportMode("full"); setImportDialogOpen(true); }} size="sm" variant="outline">
+            <Button onClick={() => { setImportUniId(filterUni); setImportCollegeIds(filterCollegeIds.length > 0 ? filterCollegeIds : []); setImportSubjectId(filterSubject); setImportMode("full"); setImportDialogOpen(true); }} size="sm" variant="outline">
               <Upload className="w-4 h-4 ml-1" />استيراد
             </Button>
             <Button onClick={openCreateLesson} size="sm"><Plus className="w-4 h-4 ml-1" />إضافة درس</Button>
