@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
 import PermissionGate from "@/components/admin/PermissionGate";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, XCircle, Eye, Clock, ImageIcon } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Eye, Clock, ImageIcon, AlertTriangle, ScanSearch } from "lucide-react";
 
 interface PaymentRequest {
   id: string; user_id: string; subscription_id: string | null;
@@ -25,12 +25,25 @@ interface StudentInfo {
   third_name: string | null; fourth_name: string | null;
 }
 
+interface PaymentMethod {
+  id: string; name: string; type: string; account_name: string | null;
+}
+
+interface ReceiptAnalysis {
+  sender_name: string | null;
+  recipient_name: string | null;
+  amount: string | null;
+  transaction_id: string | null;
+  is_match: boolean;
+  error?: string;
+}
+
 const AdminPayments = () => {
   const { loading: authLoading, user } = useAuth("moderator");
   const { toast } = useToast();
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [students, setStudents] = useState<StudentInfo[]>([]);
-  const [methods, setMethods] = useState<{ id: string; name: string; type: string }[]>([]);
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [receiptDialog, setReceiptDialog] = useState(false);
@@ -39,16 +52,18 @@ const AdminPayments = () => {
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("pending");
   const [signedReceiptUrl, setSignedReceiptUrl] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const fetchData = async () => {
     const [{ data: r }, { data: s }, { data: m }] = await Promise.all([
       supabase.from("payment_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("students").select("user_id, first_name, second_name, third_name, fourth_name"),
-      supabase.from("payment_methods").select("id, name, type"),
+      supabase.from("payment_methods").select("id, name, type, account_name"),
     ]);
     if (r) setRequests(r as PaymentRequest[]);
     if (s) setStudents(s);
-    if (m) setMethods(m as { id: string; name: string; type: string }[]);
+    if (m) setMethods(m as PaymentMethod[]);
     setLoading(false);
   };
 
@@ -61,6 +76,7 @@ const AdminPayments = () => {
   };
 
   const getMethodName = (methodId: string | null) => methodId ? methods.find((m) => m.id === methodId)?.name || "-" : "-";
+  const getMethodAccountName = (methodId: string | null) => methodId ? methods.find((m) => m.id === methodId)?.account_name || null : null;
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -71,17 +87,55 @@ const AdminPayments = () => {
     }
   };
 
+  const analyzeReceipt = useCallback(async (receiptSignedUrl: string, expectedAccountName: string | null) => {
+    setAnalyzing(true);
+    setAnalysis(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-receipt", {
+        body: { receipt_url: receiptSignedUrl, expected_account_name: expectedAccountName },
+      });
+      if (error) throw error;
+      if (data?.error === "parse_failed") {
+        setAnalysis({ sender_name: null, recipient_name: null, amount: null, transaction_id: null, is_match: false, error: "لم يتمكن النظام من قراءة السند. يرجى التحقق يدوياً." });
+      } else if (data?.error) {
+        setAnalysis({ sender_name: null, recipient_name: null, amount: null, transaction_id: null, is_match: false, error: data.error });
+      } else {
+        setAnalysis(data as ReceiptAnalysis);
+        // Auto-fill rejection reason if not matching
+        if (data && !data.is_match && data.recipient_name) {
+          setAdminNotes("بيانات المستلم في السند غير مطابقة لبيانات طريقة الدفع المسجلة.");
+        }
+      }
+    } catch (e: any) {
+      console.error("Receipt analysis failed:", e);
+      setAnalysis({ sender_name: null, recipient_name: null, amount: null, transaction_id: null, is_match: false, error: "فشل في تحليل السند" });
+    } finally {
+      setAnalyzing(false);
+    }
+  }, []);
+
   const handleReview = async (req: PaymentRequest) => {
     setSelectedRequest(req);
     setAdminNotes(req.admin_notes || "");
+    setAnalysis(null);
+    setAnalyzing(false);
+    let url: string | null = null;
     if (req.receipt_url) {
       const { data } = await supabase.storage.from("receipts").createSignedUrl(req.receipt_url, 3600);
-      setSignedReceiptUrl(data?.signedUrl || null);
+      url = data?.signedUrl || null;
+      setSignedReceiptUrl(url);
     } else {
       setSignedReceiptUrl(null);
     }
     setReviewDialog(true);
+
+    // Auto-analyze if receipt exists and status is pending
+    if (url && req.status === "pending") {
+      const accountName = getMethodAccountName(req.payment_method_id);
+      analyzeReceipt(url, accountName);
+    }
   };
+
   const handleViewReceipt = async (req: PaymentRequest) => {
     setSelectedRequest(req);
     if (req.receipt_url) {
@@ -175,8 +229,9 @@ const AdminPayments = () => {
         </div>
       </div>
 
+      {/* Review Dialog */}
       <Dialog open={reviewDialog} onOpenChange={setReviewDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>مراجعة طلب الدفع</DialogTitle></DialogHeader>
           {selectedRequest && (
             <div className="space-y-4">
@@ -186,21 +241,95 @@ const AdminPayments = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">طريقة الدفع:</span><span className="font-medium">{getMethodName(selectedRequest.payment_method_id)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span className="font-medium">{new Date(selectedRequest.created_at).toLocaleDateString("ar")}</span></div>
               </div>
+
               {signedReceiptUrl && (
                 <div className="rounded-lg overflow-hidden border">
                   <img src={signedReceiptUrl} alt="سند الدفع" className="w-full max-h-64 object-contain bg-muted" />
                 </div>
               )}
-              <div className="space-y-2"><Label>ملاحظات الإدارة</Label><Textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} placeholder="ملاحظات أو سبب الرفض..." /></div>
+
+              {/* Receipt Analysis Section */}
+              {(analyzing || analysis) && (
+                <div className="rounded-lg border p-3 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ScanSearch className="w-4 h-4 text-primary" />
+                    <span>نتائج تحليل السند</span>
+                  </div>
+
+                  {analyzing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري تحليل السند...</span>
+                    </div>
+                  )}
+
+                  {analysis && !analysis.error && (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">اسم المرسل:</span>
+                        <span className="font-medium">{analysis.sender_name || "غير متوفر"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">اسم المستلم (من السند):</span>
+                        <span className="font-medium">{analysis.recipient_name || "غير متوفر"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">اسم المستلم المتوقع:</span>
+                        <span className="font-medium">{getMethodAccountName(selectedRequest.payment_method_id) || "-"}</span>
+                      </div>
+                      {analysis.amount && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">المبلغ (من السند):</span>
+                          <span className="font-medium">{analysis.amount}</span>
+                        </div>
+                      )}
+                      {analysis.transaction_id && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">رقم العملية:</span>
+                          <span className="font-medium">{analysis.transaction_id}</span>
+                        </div>
+                      )}
+                      <div className="pt-1">
+                        {analysis.is_match ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                            <CheckCircle className="w-3 h-3 ml-1" />بيانات المستلم مطابقة
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <AlertTriangle className="w-3 h-3 ml-1" />بيانات المستلم غير مطابقة
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {analysis?.error && (
+                    <div className="flex items-center gap-2 text-sm text-yellow-600">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>{analysis.error}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>ملاحظات الإدارة</Label>
+                <Textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} placeholder="ملاحظات أو سبب الرفض..." />
+              </div>
               <div className="flex gap-2">
-                <Button onClick={handleApprove} disabled={saving} className="flex-1 bg-green-600 hover:bg-green-700"><CheckCircle className="w-4 h-4 ml-1" /> موافقة</Button>
-                <Button onClick={handleReject} disabled={saving} variant="destructive" className="flex-1"><XCircle className="w-4 h-4 ml-1" /> رفض</Button>
+                <Button onClick={handleApprove} disabled={saving} className="flex-1 bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="w-4 h-4 ml-1" /> اعتماد وتفعيل
+                </Button>
+                <Button onClick={handleReject} disabled={saving} variant="destructive" className="flex-1">
+                  <XCircle className="w-4 h-4 ml-1" /> رفض
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Receipt View Dialog */}
       <Dialog open={receiptDialog} onOpenChange={setReceiptDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>سند الدفع</DialogTitle></DialogHeader>
