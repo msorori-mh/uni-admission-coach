@@ -111,7 +111,7 @@ const AdminContent = () => {
   const [lessonSummary, setLessonSummary] = useState("");
   const [lessonMajorId, setLessonMajorId] = useState("");
   const [lessonUniId, setLessonUniId] = useState("");
-  const [lessonCollegeId, setLessonCollegeId] = useState("");
+  const [lessonCollegeIds, setLessonCollegeIds] = useState<string[]>([]);
   const [lessonOrder, setLessonOrder] = useState(0);
   const [lessonPublished, setLessonPublished] = useState(false);
   const [lessonFree, setLessonFree] = useState(false);
@@ -256,7 +256,7 @@ const AdminContent = () => {
     setLessonSummary("");
     setLessonMajorId("");
     setLessonUniId(filterUni);
-    setLessonCollegeId(filterCollege);
+    setLessonCollegeIds(filterCollege ? [filterCollege] : []);
     setLessonOrder(filteredLessons.length);
     setLessonPublished(false);
     setLessonFree(false);
@@ -279,7 +279,7 @@ const AdminContent = () => {
     setLessonMajorId(l.major_id || "");
     // Derive uni/college from the lesson
     const lessonCollege = l.college_id ? colleges.find((c: any) => c.id === l.college_id) : null;
-    setLessonCollegeId(l.college_id || "");
+    setLessonCollegeIds(l.college_id ? [l.college_id] : []);
     setLessonUniId(lessonCollege?.university_id || "");
     setLessonOrder(l.display_order);
     setLessonPublished(l.is_published);
@@ -412,8 +412,8 @@ const AdminContent = () => {
   };
 
   const handleSaveLesson = async () => {
-    if (!lessonTitle || !lessonCollegeId) {
-      toast({ variant: "destructive", title: "يرجى ملء العنوان واختيار الكلية" });
+    if (!lessonTitle || lessonCollegeIds.length === 0) {
+      toast({ variant: "destructive", title: "يرجى ملء العنوان واختيار كلية واحدة على الأقل" });
       return;
     }
     setSaving(true);
@@ -438,23 +438,23 @@ const AdminContent = () => {
       setUploadingPresentation(false);
     }
 
-    const payload: any = {
-      title: lessonTitle,
-      content: lessonContent,
-      summary: lessonSummary,
-      college_id: lessonCollegeId,
-      major_id: lessonMajorId || null,
-      subject_id: lessonSubjectId || null,
-      display_order: lessonOrder,
-      is_published: lessonPublished,
-      is_free: lessonFree,
-      presentation_url: presentationUrl || null,
-    };
     if (editingLesson) {
+      // Edit mode: update single lesson
+      const payload: any = {
+        title: lessonTitle,
+        content: lessonContent,
+        summary: lessonSummary,
+        college_id: lessonCollegeIds[0],
+        major_id: lessonMajorId || null,
+        subject_id: lessonSubjectId || null,
+        display_order: lessonOrder,
+        is_published: lessonPublished,
+        is_free: lessonFree,
+        presentation_url: presentationUrl || null,
+      };
       const { error } = await supabase.from("lessons").update(payload).eq("id", editingLesson.id);
       if (error) toast({ variant: "destructive", title: error.message });
       else {
-        // Save any pending questions for editing mode too
         if (pendingQuestions.length > 0) {
           const baseOrder = existingLessonQuestions.length;
           for (let i = 0; i < pendingQuestions.length; i++) {
@@ -476,29 +476,47 @@ const AdminContent = () => {
         toast({ title: "تم تحديث الدرس" });
       }
     } else {
-      const { data: inserted, error } = await supabase.from("lessons").insert(payload).select("id").single();
-      if (error) toast({ variant: "destructive", title: error.message });
-      else if (inserted) {
-        // Save pending questions
-        if (pendingQuestions.length > 0) {
-          for (let i = 0; i < pendingQuestions.length; i++) {
-            const pq = pendingQuestions[i];
-            await supabase.from("questions").insert({
-              lesson_id: inserted.id,
-              question_text: pq.question_text,
-              option_a: pq.option_a,
-              option_b: pq.option_b,
-              option_c: pq.option_c,
-              option_d: pq.option_d,
-              correct_option: pq.correct_option,
-              explanation: pq.explanation,
-              subject: pq.subject,
-              display_order: i,
-            });
+      // Create mode: duplicate for each selected college
+      let totalCreated = 0;
+      for (const collegeId of lessonCollegeIds) {
+        const payload: any = {
+          title: lessonTitle,
+          content: lessonContent,
+          summary: lessonSummary,
+          college_id: collegeId,
+          major_id: lessonMajorId || null,
+          subject_id: lessonSubjectId || null,
+          display_order: lessonOrder,
+          is_published: lessonPublished,
+          is_free: lessonFree,
+          presentation_url: presentationUrl || null,
+        };
+        const { data: inserted, error } = await supabase.from("lessons").insert(payload).select("id").single();
+        if (error) {
+          toast({ variant: "destructive", title: error.message });
+        } else if (inserted) {
+          totalCreated++;
+          if (pendingQuestions.length > 0) {
+            for (let i = 0; i < pendingQuestions.length; i++) {
+              const pq = pendingQuestions[i];
+              await supabase.from("questions").insert({
+                lesson_id: inserted.id,
+                question_text: pq.question_text,
+                option_a: pq.option_a,
+                option_b: pq.option_b,
+                option_c: pq.option_c,
+                option_d: pq.option_d,
+                correct_option: pq.correct_option,
+                explanation: pq.explanation,
+                subject: pq.subject,
+                display_order: i,
+              });
+            }
           }
         }
-        toast({ title: `تمت إضافة الدرس${pendingQuestions.length > 0 ? ` مع ${pendingQuestions.length} سؤال` : ""}` });
       }
+      const qMsg = pendingQuestions.length > 0 ? ` مع ${pendingQuestions.length} سؤال` : "";
+      toast({ title: `تمت إضافة الدرس في ${totalCreated} كلية${qMsg}` });
     }
     setSaving(false);
     setLessonDialogOpen(false);
@@ -1029,23 +1047,79 @@ const AdminContent = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>الجامعة *</Label>
-              <select value={lessonUniId} onChange={(e) => { setLessonUniId(e.target.value); setLessonCollegeId(""); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <select value={lessonUniId} onChange={(e) => { setLessonUniId(e.target.value); setLessonCollegeIds([]); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">اختر الجامعة</option>
+                {!editingLesson && <option value="all">📌 جميع الجامعات</option>}
                 {scopedUniversities.map((u: any) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <Label>الكلية *</Label>
-              <select value={lessonCollegeId} onChange={(e) => setLessonCollegeId(e.target.value)} disabled={!lessonUniId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
-                <option value="">اختر الكلية</option>
-                {scopedColleges.filter((c: any) => c.university_id === lessonUniId).map((c: any) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
-              </select>
-            </div>
+            {editingLesson ? (
+              <div className="space-y-2">
+                <Label>الكلية *</Label>
+                <select value={lessonCollegeIds[0] || ""} onChange={(e) => setLessonCollegeIds(e.target.value ? [e.target.value] : [])} disabled={!lessonUniId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+                  <option value="">اختر الكلية</option>
+                  {scopedColleges.filter((c: any) => lessonUniId === "all" || c.university_id === lessonUniId).map((c: any) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>الكليات * ({lessonCollegeIds.length} محددة)</Label>
+                {(() => {
+                  const availableLessonColleges = lessonUniId === "all"
+                    ? scopedColleges
+                    : lessonUniId
+                      ? scopedColleges.filter((c: any) => c.university_id === lessonUniId)
+                      : [];
+                  const allSelected = availableLessonColleges.length > 0 && availableLessonColleges.every((c: any) => lessonCollegeIds.includes(c.id));
+                  return (
+                    <div className="border rounded-md max-h-48 overflow-y-auto">
+                      {availableLessonColleges.length === 0 ? (
+                        <p className="text-xs text-muted-foreground p-3 text-center">اختر جامعة أولاً</p>
+                      ) : (
+                        <>
+                          <label className="flex items-center gap-2 p-2 border-b bg-muted/30 cursor-pointer hover:bg-muted/50">
+                            <Checkbox
+                              checked={allSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setLessonCollegeIds(availableLessonColleges.map((c: any) => c.id));
+                                } else {
+                                  setLessonCollegeIds([]);
+                                }
+                              }}
+                            />
+                            <span className="text-sm font-medium">تحديد الكل ({availableLessonColleges.length})</span>
+                          </label>
+                          {availableLessonColleges.map((c: any) => {
+                            const uniName = lessonUniId === "all" ? universities.find((u: any) => u.id === c.university_id)?.name_ar : "";
+                            return (
+                              <label key={c.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30">
+                                <Checkbox
+                                  checked={lessonCollegeIds.includes(c.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setLessonCollegeIds(prev => [...prev, c.id]);
+                                    } else {
+                                      setLessonCollegeIds(prev => prev.filter(id => id !== c.id));
+                                    }
+                                  }}
+                                />
+                                <span className="text-sm">{c.name_ar}{uniName ? ` — ${uniName}` : ""}</span>
+                              </label>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>المادة الدراسية</Label>
               <select value={lessonSubjectId} onChange={(e) => setLessonSubjectId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">بدون تصنيف</option>
-                {getSubjectsForCollege(lessonCollegeId).map((s) => <option key={s.id} value={s.id}>{s.name_ar}</option>)}
+                {(lessonCollegeIds.length === 1 ? getSubjectsForCollege(lessonCollegeIds[0]) : subjects).map((s) => <option key={s.id} value={s.id}>{s.name_ar}</option>)}
               </select>
             </div>
             <div className="space-y-2">
