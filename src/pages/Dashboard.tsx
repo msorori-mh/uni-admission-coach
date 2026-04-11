@@ -163,8 +163,8 @@ const Dashboard = () => {
     else distribution[3].count++;
   });
 
-  const chartConfig = { score: { label: "النتيجة %", color: "hsl(var(--primary))" } };
-  const barConfig = { count: { label: "عدد المحاولات", color: "hsl(var(--primary))" } };
+
+
 
   const statCards = [
     { label: "إجمالي الاختبارات", value: totalExams, icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/10" },
