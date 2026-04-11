@@ -1297,36 +1297,85 @@ const AdminContent = () => {
 
             <div className="space-y-2">
               <Label>الجامعة *</Label>
-              <select value={importUniId} onChange={(e) => { setImportUniId(e.target.value); setImportCollegeId(""); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <select value={importUniId} onChange={(e) => { setImportUniId(e.target.value); setImportCollegeIds([]); }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">اختر الجامعة</option>
+                <option value="all">📌 جميع الجامعات</option>
                 {scopedUniversities.map((u: any) => <option key={u.id} value={u.id}>{u.name_ar}</option>)}
               </select>
             </div>
+
+            {/* Multi-select Colleges */}
             <div className="space-y-2">
-              <Label>الكلية *</Label>
-              <select value={importCollegeId} onChange={(e) => { setImportCollegeId(e.target.value); }} disabled={!importUniId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
-                <option value="">اختر الكلية</option>
-                {scopedColleges.filter((c: any) => c.university_id === importUniId).map((c: any) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
-              </select>
+              <Label>الكليات * ({importCollegeIds.length} محددة)</Label>
+              {(() => {
+                const availableImportColleges = importUniId === "all"
+                  ? scopedColleges
+                  : importUniId
+                    ? scopedColleges.filter((c: any) => c.university_id === importUniId)
+                    : [];
+                const allSelected = availableImportColleges.length > 0 && availableImportColleges.every((c: any) => importCollegeIds.includes(c.id));
+                return (
+                  <div className="border rounded-md max-h-48 overflow-y-auto">
+                    {availableImportColleges.length === 0 ? (
+                      <p className="text-xs text-muted-foreground p-3 text-center">اختر جامعة أولاً</p>
+                    ) : (
+                      <>
+                        <label className="flex items-center gap-2 p-2 border-b bg-muted/30 cursor-pointer hover:bg-muted/50">
+                          <Checkbox
+                            checked={allSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setImportCollegeIds(availableImportColleges.map((c: any) => c.id));
+                              } else {
+                                setImportCollegeIds([]);
+                              }
+                            }}
+                          />
+                          <span className="text-sm font-medium">تحديد الكل ({availableImportColleges.length})</span>
+                        </label>
+                        {availableImportColleges.map((c: any) => {
+                          const uniName = importUniId === "all" ? universities.find((u: any) => u.id === c.university_id)?.name_ar : "";
+                          return (
+                            <label key={c.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30">
+                              <Checkbox
+                                checked={importCollegeIds.includes(c.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setImportCollegeIds(prev => [...prev, c.id]);
+                                  } else {
+                                    setImportCollegeIds(prev => prev.filter(id => id !== c.id));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm">{c.name_ar}{uniName ? ` — ${uniName}` : ""}</span>
+                            </label>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
+
             <div className="space-y-2">
               <Label>المادة الدراسية (اختياري)</Label>
-              <select value={importSubjectId} onChange={(e) => setImportSubjectId(e.target.value)} disabled={!importCollegeId} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
+              <select value={importSubjectId} onChange={(e) => setImportSubjectId(e.target.value)} disabled={importCollegeIds.length === 0} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50">
                 <option value="">تحديد من الملف</option>
-                {getSubjectsForCollege(importCollegeId).map((s) => <option key={s.id} value={s.id}>{s.name_ar}</option>)}
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name_ar}</option>)}
               </select>
               <p className="text-[11px] text-muted-foreground">إذا تم تحديد مادة هنا، ستُطبق على جميع الدروس المستوردة. وإلا سيتم قراءتها من الملف.</p>
             </div>
 
-            {importMode === "questions_only" && importCollegeId && (
+            {importMode === "questions_only" && importCollegeIds.length > 0 && (
               <div className="text-xs text-muted-foreground bg-accent/50 rounded-md p-2">
-                سيتم ربط الأسئلة بالدروس الموجودة ({lessons.filter(l => l.college_id === importCollegeId).length} درس) عبر تطابق عنوان الدرس
+                سيتم ربط الأسئلة بالدروس الموجودة في {importCollegeIds.length} كلية عبر تطابق عنوان الدرس
               </div>
             )}
 
             <div className="space-y-2">
               <Label>اختر ملف (Excel أو CSV)</Label>
-              <Input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} disabled={!importCollegeId || importing} />
+              <Input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} disabled={importCollegeIds.length === 0 || importing} />
             </div>
             {importing && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1366,6 +1415,7 @@ const AdminContent = () => {
                 )}
               </div>
             </div>
+          </div>
           </div>
         </DialogContent>
       </Dialog>
