@@ -543,6 +543,60 @@ const AdminContent = () => {
     else { toast({ title: "تم الحذف" }); if (selectedLesson === id) setSelectedLesson(null); fetchData(); }
   };
 
+  // --- Copy Lesson to other colleges ---
+  const openCopyLesson = (l: Lesson) => {
+    setCopyingLesson(l);
+    setCopyUniId("");
+    setCopyCollegeIds([]);
+    setCopyDialogOpen(true);
+  };
+
+  const handleCopyLesson = async () => {
+    if (!copyingLesson || copyCollegeIds.length === 0) return;
+    setCopying(true);
+    const lessonQuestions = questions.filter(q => q.lesson_id === copyingLesson.id);
+    let totalCreated = 0;
+    for (const collegeId of copyCollegeIds) {
+      const { data: inserted, error } = await supabase.from("lessons").insert({
+        title: copyingLesson.title,
+        content: copyingLesson.content,
+        summary: copyingLesson.summary,
+        college_id: collegeId,
+        major_id: copyingLesson.major_id,
+        subject_id: copyingLesson.subject_id,
+        display_order: copyingLesson.display_order,
+        is_published: copyingLesson.is_published,
+        is_free: copyingLesson.is_free,
+        presentation_url: copyingLesson.presentation_url,
+      }).select("id").single();
+      if (error) {
+        toast({ variant: "destructive", title: error.message });
+      } else if (inserted) {
+        totalCreated++;
+        for (let i = 0; i < lessonQuestions.length; i++) {
+          const q = lessonQuestions[i];
+          await supabase.from("questions").insert({
+            lesson_id: inserted.id,
+            question_text: q.question_text,
+            option_a: q.option_a,
+            option_b: q.option_b,
+            option_c: q.option_c,
+            option_d: q.option_d,
+            correct_option: q.correct_option,
+            explanation: q.explanation,
+            subject: q.subject,
+            display_order: q.display_order,
+          });
+        }
+      }
+    }
+    const qMsg = lessonQuestions.length > 0 ? ` مع ${lessonQuestions.length} سؤال` : "";
+    toast({ title: `تم نسخ الدرس إلى ${totalCreated} كلية${qMsg}` });
+    setCopying(false);
+    setCopyDialogOpen(false);
+    fetchData();
+  };
+
   // --- Question CRUD (from questions panel) ---
   const openCreateQuestion = (lessonId: string) => {
     setEditingQuestion(null);
