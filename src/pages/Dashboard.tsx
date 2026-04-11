@@ -20,10 +20,7 @@ import {
   ClipboardCheck, Trophy, TrendingUp, Target, BarChart3, CreditCard, Search,
   Building2, ChevronLeft, Lightbulb, RefreshCw,
 } from "lucide-react";
-import {
-  ChartContainer, ChartTooltip, ChartTooltipContent
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, LineChart, Line, ResponsiveContainer } from "recharts";
+import DashboardCharts from "@/components/DashboardCharts";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
