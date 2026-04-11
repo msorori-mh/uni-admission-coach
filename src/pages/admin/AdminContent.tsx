@@ -727,7 +727,7 @@ const AdminContent = () => {
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !importCollegeId) return;
+    if (!file || importCollegeIds.length === 0) return;
     setImporting(true);
 
     try {
@@ -758,70 +758,71 @@ const AdminContent = () => {
         });
       }
 
-      const lessonMap = new Map<string, string>();
-      if (importMode === "questions_only") {
-        // Skip lessons sheet, load existing lessons for this college
-        lessons.filter(l => l.college_id === importCollegeId).forEach(l => lessonMap.set(l.title, l.id));
-      } else if (lessonsSheet.length > 1) {
-        for (let i = 1; i < lessonsSheet.length; i++) {
-          const row = lessonsSheet[i] as any[];
-          if (!row[0]) continue;
-          const title = String(row[0]).trim();
-          const subjectName = row[5] ? String(row[5]).trim() : "";
-          const matchedSubject = subjectName ? subjects.find(s => s.name_ar === subjectName || s.code === subjectName) : null;
-          const resolvedSubjectId = importSubjectId || matchedSubject?.id || null;
-          const presentationUrl = row[6] ? String(row[6]).trim() : "";
-          const { data: inserted, error } = await supabase.from("lessons").insert({
-            college_id: importCollegeId,
-            title,
-            content: row[1] ? String(row[1]) : "",
-            summary: row[2] ? String(row[2]) : "",
-            display_order: row[3] ? Number(row[3]) : i,
-            is_published: row[4] ? String(row[4]).includes("نعم") || String(row[4]).toLowerCase() === "true" : false,
-            subject_id: resolvedSubjectId,
-            presentation_url: presentationUrl || null,
-          }).select("id").single();
-          if (error) {
-            toast({ variant: "destructive", title: `خطأ في درس "${title}": ${error.message}` });
-          } else if (inserted) {
-            lessonMap.set(title, inserted.id);
+      // Loop through each selected college
+      for (const collegeId of importCollegeIds) {
+        const lessonMap = new Map<string, string>();
+        if (importMode === "questions_only") {
+          lessons.filter(l => l.college_id === collegeId).forEach(l => lessonMap.set(l.title, l.id));
+        } else if (lessonsSheet.length > 1) {
+          for (let i = 1; i < lessonsSheet.length; i++) {
+            const row = lessonsSheet[i] as any[];
+            if (!row[0]) continue;
+            const title = String(row[0]).trim();
+            const subjectName = row[5] ? String(row[5]).trim() : "";
+            const matchedSubject = subjectName ? subjects.find(s => s.name_ar === subjectName || s.code === subjectName) : null;
+            const resolvedSubjectId = importSubjectId || matchedSubject?.id || null;
+            const presentationUrl = row[6] ? String(row[6]).trim() : "";
+            const { data: inserted, error } = await supabase.from("lessons").insert({
+              college_id: collegeId,
+              title,
+              content: row[1] ? String(row[1]) : "",
+              summary: row[2] ? String(row[2]) : "",
+              display_order: row[3] ? Number(row[3]) : i,
+              is_published: row[4] ? String(row[4]).includes("نعم") || String(row[4]).toLowerCase() === "true" : false,
+              subject_id: resolvedSubjectId,
+              presentation_url: presentationUrl || null,
+            }).select("id").single();
+            if (error) {
+              toast({ variant: "destructive", title: `خطأ في درس "${title}": ${error.message}` });
+            } else if (inserted) {
+              lessonMap.set(title, inserted.id);
+            }
+          }
+        }
+
+        if (questionsSheet.length > 1) {
+          if (lessonMap.size === 0) {
+            lessons.filter(l => l.college_id === collegeId).forEach(l => lessonMap.set(l.title, l.id));
+          }
+
+          for (let i = 1; i < questionsSheet.length; i++) {
+            const row = questionsSheet[i] as any[];
+            if (!row[0] || !row[1]) continue;
+            const lessonTitle = String(row[0]).trim();
+            const lessonId = lessonMap.get(lessonTitle);
+            if (!lessonId) {
+              continue;
+            }
+            const { error } = await supabase.from("questions").insert({
+              lesson_id: lessonId,
+              question_text: String(row[1]),
+              option_a: String(row[2] || ""),
+              option_b: String(row[3] || ""),
+              option_c: String(row[4] || ""),
+              option_d: String(row[5] || ""),
+              correct_option: String(row[6] || "a").toLowerCase().trim(),
+              explanation: row[7] ? String(row[7]) : "",
+              subject: row[8] ? getSubjectValue(String(row[8])) : "general",
+              display_order: i,
+            });
+            if (error) {
+              toast({ variant: "destructive", title: `خطأ في سؤال ${i}: ${error.message}` });
+            }
           }
         }
       }
 
-      if (questionsSheet.length > 1) {
-        if (lessonMap.size === 0) {
-          lessons.filter(l => l.college_id === importCollegeId).forEach(l => lessonMap.set(l.title, l.id));
-        }
-
-        for (let i = 1; i < questionsSheet.length; i++) {
-          const row = questionsSheet[i] as any[];
-          if (!row[0] || !row[1]) continue;
-          const lessonTitle = String(row[0]).trim();
-          const lessonId = lessonMap.get(lessonTitle);
-          if (!lessonId) {
-            toast({ variant: "destructive", title: `لم يتم العثور على درس "${lessonTitle}" - تخطي السؤال ${i}` });
-            continue;
-          }
-          const { error } = await supabase.from("questions").insert({
-            lesson_id: lessonId,
-            question_text: String(row[1]),
-            option_a: String(row[2] || ""),
-            option_b: String(row[3] || ""),
-            option_c: String(row[4] || ""),
-            option_d: String(row[5] || ""),
-            correct_option: String(row[6] || "a").toLowerCase().trim(),
-            explanation: row[7] ? String(row[7]) : "",
-            subject: row[8] ? getSubjectValue(String(row[8])) : "general",
-            display_order: i,
-          });
-          if (error) {
-            toast({ variant: "destructive", title: `خطأ في سؤال ${i}: ${error.message}` });
-          }
-        }
-      }
-
-      toast({ title: "تم الاستيراد بنجاح" });
+      toast({ title: `تم الاستيراد بنجاح في ${importCollegeIds.length} كلية` });
       fetchData();
     } catch (err: any) {
       toast({ variant: "destructive", title: `خطأ في قراءة الملف: ${err.message}` });
