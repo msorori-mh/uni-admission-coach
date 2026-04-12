@@ -14,7 +14,7 @@ export const useAuth = (requiredRole?: AppRole) => {
     if (authLoading) return;
 
     if (!user) {
-      navigate("/login");
+      navigate("/register");
       setLoading(false);
       return;
     }
