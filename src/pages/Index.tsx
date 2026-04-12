@@ -71,30 +71,22 @@ const Index = React.forwardRef<HTMLDivElement>((_, fwdRef) => {
       </section>
 
       {/* Hero Hook */}
-      <section className="bg-primary py-8 px-4">
+      <section className="gradient-hero py-5 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-xl md:text-3xl font-extrabold text-primary-foreground leading-snug">
-            لا تترك حلمك للصدفة..
-            <br />
-            <span className="text-secondary">هندس طريقك</span> للقبول في الجامعات اليمنية
-          </h2>
+          <p className="text-base md:text-lg text-primary-foreground/85 leading-relaxed">
+            لا تترك حلمك للصدفة.. <span className="text-secondary font-bold">هندس طريقك</span> للقبول في الجامعات اليمنية
+          </p>
         </div>
       </section>
 
       {/* AI Assistant "Qabool" */}
-      <section className="bg-background py-6 px-4">
+      <section className="bg-background py-4 px-4">
         <div className="max-w-3xl mx-auto animate-fade-in">
-          <div className="relative rounded-xl border border-accent/30 bg-gradient-to-br from-accent/5 via-background to-primary/5 p-5 md:p-6 text-center shadow overflow-hidden">
-            <div className="relative z-10 flex flex-col items-center gap-3">
-              <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-accent/15">
-                <Bot className="w-6 h-6 text-accent" />
-              </div>
-              <h3 className="text-base md:text-lg font-extrabold text-foreground">
-                🤖 المساعد الذكي "قبول"
-              </h3>
-              <p className="text-muted-foreground leading-relaxed text-sm max-w-xl mx-auto">
-                رفيقك الذكي الذي يحلل أداءك ويرشدك لأفضل الطرق لاجتياز المفاضلة بنجاح.
-              </p>
+          <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3">
+            <Bot className="w-5 h-5 text-accent shrink-0" />
+            <div>
+              <span className="font-bold text-foreground text-sm">المساعد الذكي "قبول"</span>
+              <span className="text-muted-foreground text-xs mr-1">— يحلل أداءك ويرشدك لاجتياز المفاضلة بنجاح.</span>
             </div>
           </div>
         </div>
